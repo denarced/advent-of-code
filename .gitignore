@@ -1,0 +1,12 @@
+# Vim swap files.
+*.sw[op]
+# Log files.
+*.log
+*.log.gz
+
+# Go test coverage files.
+cover.html
+cover.out
+
+# Inputs
+data/
