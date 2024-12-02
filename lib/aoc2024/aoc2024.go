@@ -22,7 +22,7 @@ func Advent01Distance(left, right []int) int {
 	slices.Sort(left)
 	slices.Sort(right)
 	distance := 0
-	for i := 0; i < len(left); i++ {
+	for i := range len(left) {
 		distance += shared.Abs(left[i] - right[i])
 		if distance < 0 {
 			panic("Distance is <0 (int overflow).")
@@ -172,15 +172,12 @@ func CountSafe(levels [][]int, dampener bool) int {
 	return count
 }
 
-// Derive index of unsafe level or -1 if levels are safe.
+// Derive index where unsafe was detected or -1 if levels are safe.
 func deriveUnsafe(levels []int) int {
 	asc := levels[0] < levels[1]
-	for i := 0; i < len(levels)-1; i++ {
+	for i := range len(levels) - 1 {
 		first, second := levels[i], levels[i+1]
-		if asc && first > second {
-			return i
-		}
-		if !asc && first < second {
+		if asc && first > second || !asc && first < second {
 			return i
 		}
 		diff := shared.Abs(first - second)
