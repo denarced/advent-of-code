@@ -15,28 +15,19 @@ func main() {
 
 	shared.Logger.Info("Read data.")
 	file, err := os.Open("data/2024-01.txt")
-	die(err, "open file")
+	shared.Die(err, "open file")
 	defer file.Close()
 	lines, err := aoc2024.ReadLines(file)
-	die(err, "ReadLines")
+	shared.Die(err, "ReadLines")
 
 	leftStrs, rightStrs := aoc2024.ToColumns(lines)
 	left, err := aoc2024.ToInts(leftStrs)
-	die(err, "ToInts(leftStrs)")
+	shared.Die(err, "ToInts(leftStrs)")
 
 	right, err := aoc2024.ToInts(rightStrs)
-	die(err, "ToInts(rightStrs)")
+	shared.Die(err, "ToInts(rightStrs)")
 
 	fmt.Println("Distance:", aoc2024.Advent01Distance(left, right))
 	fmt.Println("Similarity:", aoc2024.Advent01Similarity(left, right))
 	shared.Logger.Info("Done.")
-}
-
-func die(err error, message string) {
-	if err == nil {
-		return
-	}
-	fmt.Fprintf(os.Stderr, "Message: \"%s\". Error: %s.\n", message, err)
-	//revive:disable-next-line:deep-exit
-	os.Exit(2)
 }

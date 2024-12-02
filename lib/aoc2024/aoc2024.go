@@ -121,3 +121,72 @@ func trim(s []string) (trimmed []string) {
 	}
 	return
 }
+
+func ToIntTable(s []string) (table [][]int) {
+	for _, each := range s {
+		cells := strings.Fields(each)
+		var row []int
+		for _, c := range cells {
+			n, err := strconv.Atoi(c)
+			if err != nil {
+				panic("Invalid number: " + c)
+			}
+			row = append(row, n)
+		}
+		if row == nil {
+			panic("Empty row")
+		}
+		table = append(table, row)
+	}
+	return
+}
+
+func CountSafe(levels [][]int, dampener bool) int {
+	count := 0
+	for _, each := range levels {
+		if len(each) < 2 {
+			continue
+		}
+		index := deriveUnsafe(each)
+		if index < 0 {
+			count++
+			continue
+		}
+		if !dampener {
+			continue
+		}
+
+		for i := index + 1; i >= 0; i-- {
+			trimmed := append([]int{}, each[0:i]...)
+			trimmed = append(trimmed, each[i+1:]...)
+			index = deriveUnsafe(trimmed)
+			if index < 0 {
+				shared.Logger.Debug("Safe after trimmed.", "original", each, "trimmed", trimmed)
+				break
+			}
+		}
+		if index < 0 {
+			count++
+		}
+	}
+	return count
+}
+
+// Derive index of unsafe level or -1 if levels are safe.
+func deriveUnsafe(levels []int) int {
+	asc := levels[0] < levels[1]
+	for i := 0; i < len(levels)-1; i++ {
+		first, second := levels[i], levels[i+1]
+		if asc && first > second {
+			return i
+		}
+		if !asc && first < second {
+			return i
+		}
+		diff := shared.Abs(first - second)
+		if diff < 1 || diff > 3 {
+			return i
+		}
+	}
+	return -1
+}
