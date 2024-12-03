@@ -20,3 +20,10 @@ func Die(err error, message string) {
 	//revive:disable-next-line:deep-exit
 	os.Exit(2)
 }
+
+func Or[T any](o bool, yes, no T) T {
+	if o {
+		return yes
+	}
+	return no
+}
