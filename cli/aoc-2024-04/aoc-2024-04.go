@@ -11,12 +11,12 @@ import (
 func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
-	file, err := os.Open("data/2024-03.txt")
+	file, err := os.Open("data/2024-04.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
-	text, err := aoc2024.ReadAll(file)
+	table, err := aoc2024.ReadLines(file)
 	shared.Die(err, "ReadLines")
-	fmt.Println("Without do/don't:", aoc2024.Multiply(text, false))
-	fmt.Println("With do/don't:", aoc2024.Multiply(text, true))
+	fmt.Println("XMAS count:", aoc2024.CountInTable(table, "XMAS"))
+	fmt.Println("MAX-MAX count:", aoc2024.CountWordCrosses(table, "MAS"))
 	shared.Logger.Info("Done.")
 }

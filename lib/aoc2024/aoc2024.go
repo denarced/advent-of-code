@@ -12,7 +12,10 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-var mulPattern = regexp.MustCompile(`mul\(\d+,\d+\)|don't\(\)|do\(\)`)
+var (
+	mulPattern = regexp.MustCompile(`mul\(\d+,\d+\)|don't\(\)|do\(\)`)
+	directions = []direction{{1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+)
 
 func Advent01Distance(left, right []int) int {
 	shared.Logger.Info(
@@ -69,6 +72,18 @@ func deriveCounts(s []int) map[int]int {
 		}
 	}
 	return counts
+}
+
+func ReadAll(reader io.Reader) (s string, err error) {
+	shared.Logger.Info("Read all.")
+
+	var b []byte
+	b, err = io.ReadAll(reader)
+	if err != nil {
+		return
+	}
+	s = string(b)
+	return
 }
 
 func ReadLines(reader io.Reader) (lines []string, err error) {
@@ -234,4 +249,100 @@ func toInt(s string) int {
 		panic("Failed to convert to int: " + s)
 	}
 	return i
+}
+
+func CountInTable(table []string, word string) int {
+	if len(word) == 0 {
+		return 0
+	}
+	count := 0
+	for r := 0; r < len(table); r++ {
+		for c := 0; c < len(table[r]); c++ {
+			if table[r][c] == word[0] {
+				count += countWordsAt(table, word, r, c)
+			}
+		}
+	}
+	return count
+}
+
+func CountWordCrosses(table []string, word string) int {
+	locations := findWordLocations(table, word)
+	counts := map[loc]int{}
+	total := 0
+	for _, each := range locations {
+		if count, ok := counts[each]; ok {
+			if count > 1 {
+				panic("wtf")
+			}
+			counts[each]++
+			total++
+			shared.Logger.Info("Found word cross.", "location", each)
+		} else {
+			shared.Logger.Debug("Found half of word cross.", "location", each)
+			counts[each] = 1
+		}
+	}
+	return total
+}
+
+type direction struct {
+	x int
+	y int
+}
+
+func countWordsAt(table []string, word string, row, col int) int {
+	directions := []direction{{1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+	count := 0
+	for _, each := range directions {
+		if readTableAt(table, row, col, len(word), each) == word {
+			count++
+		}
+	}
+	return count
+}
+
+type loc struct {
+	x int
+	y int
+}
+
+func findWordLocations(table []string, word string) []loc {
+	if len(word)%2 != 1 {
+		panic("only works with odd length words: 3, 5, 7, ...")
+	}
+	var locations []loc
+	mid := len(word) / 2
+	for r := 0; r < len(table); r++ {
+		for c := 0; c < len(table[r]); c++ {
+			for _, each := range directions {
+				if each.x == 0 || each.y == 0 {
+					continue
+				}
+				if readTableAt(table, r, c, len(word), each) == word {
+					x := r + each.x*mid
+					y := c + each.y*mid
+					locations = append(locations, loc{x, y})
+				}
+			}
+		}
+	}
+	return locations
+}
+
+func readTableAt(table []string, row, col, count int, dir direction) string {
+	result := ""
+	for range count {
+		if row < 0 || row >= len(table) {
+			break
+		}
+		line := table[row]
+		if col < 0 || col >= len(line) {
+			break
+		}
+		result += line[col : col+1]
+		row += dir.x
+		col += dir.y
+	}
+	return result
 }
