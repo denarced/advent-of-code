@@ -11,12 +11,16 @@ import (
 func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
-	file, err := os.Open("data/2024-04.txt")
+
+	file, err := os.Open("data/2024-05.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
+
 	lines, err := aoc2024.ReadLines(file)
 	shared.Die(err, "ReadLines")
-	fmt.Println("XMAS count:", aoc2024.CountInTable(lines, "XMAS"))
-	fmt.Println("MAX-MAX count:", aoc2024.CountWordCrosses(lines, "MAS"))
+
+	fmt.Println("Correct middle page number sum:", aoc2024.SumCorrectMiddlePageNumbers(lines))
+	fmt.Println("Incorrect middle page number sum:", aoc2024.SumIncorrectMiddlePageNumbers(lines))
+
 	shared.Logger.Info("Done.")
 }
