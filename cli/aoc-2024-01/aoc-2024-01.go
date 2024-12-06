@@ -17,10 +17,10 @@ func main() {
 	file, err := os.Open("data/2024-01.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
-	lines, err := aoc2024.ReadLines(file)
+	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	leftStrs, rightStrs := aoc2024.ToColumns(lines)
+	leftStrs, rightStrs := shared.ToColumns(lines)
 	left, err := aoc2024.ToInts(leftStrs)
 	shared.Die(err, "ToInts(leftStrs)")
 

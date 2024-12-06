@@ -14,7 +14,7 @@ func main() {
 	file, err := os.Open("data/2024-04.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
-	lines, err := aoc2024.ReadLines(file)
+	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 	fmt.Println("XMAS count:", aoc2024.CountInTable(lines, "XMAS"))
 	fmt.Println("MAX-MAX count:", aoc2024.CountWordCrosses(lines, "MAS"))

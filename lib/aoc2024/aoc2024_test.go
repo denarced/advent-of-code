@@ -13,7 +13,7 @@ func TestToColumns(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
-			left, right := ToColumns(lines)
+			left, right := shared.ToColumns(lines)
 			req.Equal(expectedLeft, left)
 			req.Equal(expectedRight, right)
 		})
@@ -251,4 +251,33 @@ func TestSumIncorrectMiddlePageNumbers(t *testing.T) {
 	shared.InitTestLogging(t)
 	// 123 is from the problem description.
 	require.Equal(t, 123, SumIncorrectMiddlePageNumbers(advent05Lines()))
+}
+
+func TestCountDistinctPositions(t *testing.T) {
+	run := func(name string, lines []string, expected int) {
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			actual := CountDistinctPositions(lines)
+			req.Equal(expected, actual)
+		})
+	}
+
+	run("empty", []string{}, 0)
+	run(
+		"example",
+		[]string{
+			// 23456789
+			"....#.....", // 0
+			".........#", // 1
+			"..........", // 2
+			"..#.......", // 3
+			".......#..", // 4
+			"..........", // 5
+			".#..^.....", // 6
+			"........#.", // 7
+			"#.........", // 8
+			"......#...", // 9
+		},
+		41)
 }

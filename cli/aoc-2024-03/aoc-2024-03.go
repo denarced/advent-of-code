@@ -14,7 +14,7 @@ func main() {
 	file, err := os.Open("data/2024-03.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
-	text, err := aoc2024.ReadAll(file)
+	text, err := shared.ReadAll(file)
 	shared.Die(err, "ReadLines")
 	fmt.Println("Without do/don't:", aoc2024.Multiply(text, false))
 	fmt.Println("With do/don't:", aoc2024.Multiply(text, true))

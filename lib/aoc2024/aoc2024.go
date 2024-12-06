@@ -2,8 +2,6 @@
 package aoc2024
 
 import (
-	"bytes"
-	"io"
 	"regexp"
 	"slices"
 	"strconv"
@@ -14,7 +12,20 @@ import (
 
 var (
 	mulPattern = regexp.MustCompile(`mul\(\d+,\d+\)|don't\(\)|do\(\)`)
-	directions = []direction{{1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}}
+	dirNorth   = direction{0, -1}
+	dirEast    = direction{1, 0}
+	dirSouth   = direction{0, 1}
+	dirWest    = direction{-1, 0}
+	directions = []direction{
+		dirEast,
+		{1, -1},
+		dirNorth,
+		{-1, -1},
+		dirWest,
+		{-1, 1},
+		dirSouth,
+		{1, 1},
+	}
 )
 
 func Advent01Distance(left, right []int) int {
@@ -74,47 +85,6 @@ func deriveCounts(s []int) map[int]int {
 	return counts
 }
 
-func ReadAll(reader io.Reader) (s string, err error) {
-	shared.Logger.Info("Read all.")
-
-	var b []byte
-	b, err = io.ReadAll(reader)
-	if err != nil {
-		return
-	}
-	s = string(b)
-	return
-}
-
-func ReadLines(reader io.Reader) (lines []string, err error) {
-	shared.Logger.Info("Read lines.")
-
-	var b []byte
-	b, err = io.ReadAll(reader)
-	if err != nil {
-		return
-	}
-
-	for _, each := range bytes.Split(b, []byte("\n")) {
-		line := strings.TrimSpace(string(each))
-		if line == "" {
-			continue
-		}
-		lines = append(lines, line)
-	}
-	return
-}
-
-func ToColumns(s []string) (left []string, right []string) {
-	shared.Logger.Info("Split slice content to two coluns.", "length", len(s))
-	for _, each := range s {
-		pieces := trim(strings.Split(each, " "))
-		left = append(left, pieces[0])
-		right = append(right, pieces[1])
-	}
-	return
-}
-
 func ToInts(s []string) (nums []int, err error) {
 	shared.Logger.Info("Convert string slice to ints.", "length", len(s))
 	for _, each := range s {
@@ -125,17 +95,6 @@ func ToInts(s []string) (nums []int, err error) {
 			return
 		}
 		nums = append(nums, n)
-	}
-	return
-}
-
-func trim(s []string) (trimmed []string) {
-	for _, each := range s {
-		aTrimmed := strings.TrimSpace(each)
-		if aTrimmed == "" {
-			continue
-		}
-		trimmed = append(trimmed, aTrimmed)
 	}
 	return
 }
@@ -268,7 +227,7 @@ func CountInTable(table []string, word string) int {
 
 func CountWordCrosses(table []string, word string) int {
 	locations := findWordLocations(table, word)
-	counts := map[loc]int{}
+	counts := map[location]int{}
 	total := 0
 	for _, each := range locations {
 		if count, ok := counts[each]; ok {
@@ -291,6 +250,19 @@ type direction struct {
 	y int
 }
 
+func (v direction) turnRight() direction {
+	if v == dirNorth {
+		return dirEast
+	}
+	if v == dirEast {
+		return dirSouth
+	}
+	if v == dirSouth {
+		return dirWest
+	}
+	return dirNorth
+}
+
 func countWordsAt(table []string, word string, row, col int) int {
 	directions := []direction{{1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}}
 	count := 0
@@ -302,16 +274,21 @@ func countWordsAt(table []string, word string, row, col int) int {
 	return count
 }
 
-type loc struct {
+type vector struct {
+	loc location
+	dir direction
+}
+
+type location struct {
 	x int
 	y int
 }
 
-func findWordLocations(table []string, word string) []loc {
+func findWordLocations(table []string, word string) []location {
 	if len(word)%2 != 1 {
 		panic("only works with odd length words: 3, 5, 7, ...")
 	}
-	var locations []loc
+	var locations []location
 	mid := len(word) / 2
 	for r := 0; r < len(table); r++ {
 		for c := 0; c < len(table[r]); c++ {
@@ -322,7 +299,7 @@ func findWordLocations(table []string, word string) []loc {
 				if readTableAt(table, r, c, len(word), each) == word {
 					x := r + each.x*mid
 					y := c + each.y*mid
-					locations = append(locations, loc{x, y})
+					locations = append(locations, location{x, y})
 				}
 			}
 		}
@@ -468,4 +445,100 @@ func findRelevantRule(rules [][]int, a, b int) []int {
 		}
 	}
 	return relevant
+}
+
+type board struct {
+	curr    vector
+	blocks  *shared.Set[location]
+	visited *shared.Set[location]
+	width   int
+	height  int
+}
+
+func newBoard(init location, blocks []location, width, height int) *board {
+	return &board{
+		curr:    vector{loc: init, dir: dirNorth},
+		blocks:  shared.NewSet(blocks),
+		visited: shared.NewSet([]location{init}),
+		width:   width,
+		height:  height,
+	}
+}
+
+func (v *board) deriveNextLocation() location {
+	return location{
+		x: v.curr.loc.x + v.curr.dir.y,
+		y: v.curr.loc.y + v.curr.dir.x,
+	}
+}
+
+func (v *board) isInside(l location) bool {
+	if l.x < 0 || l.y < 0 {
+		return false
+	}
+	if l.x >= v.height {
+		return false
+	}
+	return l.y < v.width
+}
+
+func (v *board) turn() {
+	v.curr.dir = v.curr.dir.turnRight()
+}
+
+func (v *board) isBlock(l location) bool {
+	return v.blocks.Has(l)
+}
+
+func (v *board) move(l location) {
+	v.curr.loc = l
+	v.visited.Add(l)
+}
+
+func CountDistinctPositions(lines []string) int {
+	if len(lines) == 0 {
+		return 0
+	}
+	brd := newBoard(
+		findCharacter(lines, '^'),
+		findLocations(lines, '#'),
+		len(lines[0]),
+		len(lines))
+	for {
+		next := brd.deriveNextLocation()
+		if !brd.isInside(next) {
+			break
+		}
+		if brd.isBlock(next) {
+			brd.turn()
+			continue
+		}
+		shared.Logger.Debug("Step.", "previous", brd.curr, "next", next)
+		brd.move(next)
+	}
+	return brd.visited.Count()
+}
+
+func findLocations(lines []string, c byte) []location {
+	locs := []location{}
+	for r := 0; r < len(lines); r++ {
+		for l := 0; l < len(lines[r]); l++ {
+			char := lines[r][l]
+			if char == c {
+				locs = append(locs, location{r, l})
+			}
+		}
+	}
+	return locs
+}
+
+func findCharacter(lines []string, char byte) location {
+	for r := 0; r < len(lines); r++ {
+		for c := 0; c < len(lines[r]); c++ {
+			if lines[r][c] == char {
+				return location{r, c}
+			}
+		}
+	}
+	return location{-1, -1}
 }

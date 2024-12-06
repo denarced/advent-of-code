@@ -14,7 +14,7 @@ func main() {
 	file, err := os.Open("data/2024-02.txt")
 	shared.Die(err, "open file")
 	defer file.Close()
-	lines, err := aoc2024.ReadLines(file)
+	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 	table := aoc2024.ToIntTable(lines)
 	fmt.Println("Safe count without dampener:", aoc2024.CountSafe(table, false))
