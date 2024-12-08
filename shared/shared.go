@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -147,4 +148,23 @@ func Max[T number](a, b T) T {
 		return a
 	}
 	return b
+}
+
+func ToIntTable(s []string) (table [][]int) {
+	for _, each := range s {
+		cells := strings.Fields(each)
+		var row []int
+		for _, c := range cells {
+			n, err := strconv.Atoi(c)
+			if err != nil {
+				panic("Invalid number: " + c)
+			}
+			row = append(row, n)
+		}
+		if row == nil {
+			panic("Empty row")
+		}
+		table = append(table, row)
+	}
+	return
 }

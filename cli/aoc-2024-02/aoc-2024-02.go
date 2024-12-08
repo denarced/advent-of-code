@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denarced/advent-of-code/lib/aoc2024"
+	"github.com/denarced/advent-of-code/lib/aoc2402"
 	"github.com/denarced/advent-of-code/shared"
 )
 
@@ -16,8 +16,8 @@ func main() {
 	defer file.Close()
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
-	table := aoc2024.ToIntTable(lines)
-	fmt.Println("Safe count without dampener:", aoc2024.CountSafe(table, false))
-	fmt.Println("Safe count with dampener:", aoc2024.CountSafe(table, true))
+	table := shared.ToIntTable(lines)
+	fmt.Println("Safe count without dampener:", aoc2402.CountSafe(table, false))
+	fmt.Println("Safe count with dampener:", aoc2402.CountSafe(table, true))
 	shared.Logger.Info("Done.")
 }
