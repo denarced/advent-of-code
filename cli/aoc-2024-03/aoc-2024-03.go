@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denarced/advent-of-code/lib/aoc2024"
+	"github.com/denarced/advent-of-code/lib/aoc2403"
 	"github.com/denarced/advent-of-code/shared"
 )
 
@@ -16,7 +16,7 @@ func main() {
 	defer file.Close()
 	text, err := shared.ReadAll(file)
 	shared.Die(err, "ReadLines")
-	fmt.Println("Without do/don't:", aoc2024.Multiply(text, false))
-	fmt.Println("With do/don't:", aoc2024.Multiply(text, true))
+	fmt.Println("Without do/don't:", aoc2403.Multiply(text, false))
+	fmt.Println("With do/don't:", aoc2403.Multiply(text, true))
 	shared.Logger.Info("Done.")
 }
