@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/denarced/advent-of-code/lib/aoc2024"
+	"github.com/denarced/advent-of-code/lib/aoc2401"
 	"github.com/denarced/advent-of-code/shared"
 )
 
@@ -27,7 +28,7 @@ func main() {
 	right, err := aoc2024.ToInts(rightStrs)
 	shared.Die(err, "ToInts(rightStrs)")
 
-	fmt.Println("Distance:", aoc2024.Advent01Distance(left, right))
-	fmt.Println("Similarity:", aoc2024.Advent01Similarity(left, right))
+	fmt.Println("Distance:", aoc2401.Distance(left, right))
+	fmt.Println("Similarity:", aoc2401.Similarity(left, right))
 	shared.Logger.Info("Done.")
 }
