@@ -9,6 +9,23 @@ import (
 	"strings"
 )
 
+var (
+	DirNorth   = Direction{X: 0, Y: -1}
+	DirEast    = Direction{X: 1, Y: 0}
+	DirSouth   = Direction{X: 0, Y: 1}
+	DirWest    = Direction{X: -1, Y: 0}
+	Directions = []Direction{
+		DirEast,
+		{X: 1, Y: -1},
+		DirNorth,
+		{X: -1, Y: -1},
+		DirWest,
+		{X: -1, Y: 1},
+		DirSouth,
+		{X: 1, Y: 1},
+	}
+)
+
 func Abs(i int) int {
 	if i < 0 {
 		return -i
@@ -167,4 +184,34 @@ func ToIntTable(s []string) (table [][]int) {
 		table = append(table, row)
 	}
 	return
+}
+
+type Direction struct {
+	X int
+	Y int
+}
+
+func (v Direction) TurnRight() Direction {
+	if v == DirNorth {
+		return DirEast
+	}
+	if v == DirEast {
+		return DirSouth
+	}
+	if v == DirSouth {
+		return DirWest
+	}
+	if v == DirWest {
+		return DirNorth
+	}
+	panic("no direction")
+}
+
+type Location struct {
+	X int
+	Y int
+}
+
+func (v Location) ToString() string {
+	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }

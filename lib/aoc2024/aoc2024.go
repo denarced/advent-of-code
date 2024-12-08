@@ -10,23 +10,6 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-var (
-	dirNorth   = direction{0, -1}
-	dirEast    = direction{1, 0}
-	dirSouth   = direction{0, 1}
-	dirWest    = direction{-1, 0}
-	directions = []direction{
-		dirEast,
-		{1, -1},
-		dirNorth,
-		{-1, -1},
-		dirWest,
-		{-1, 1},
-		dirSouth,
-		{1, 1},
-	}
-)
-
 func ToInts(s []string) (nums []int, err error) {
 	shared.Logger.Info("Convert string slice to ints.", "length", len(s))
 	for _, each := range s {
@@ -41,125 +24,9 @@ func ToInts(s []string) (nums []int, err error) {
 	return
 }
 
-func CountInTable(table []string, word string) int {
-	if len(word) == 0 {
-		return 0
-	}
-	count := 0
-	for r := 0; r < len(table); r++ {
-		for c := 0; c < len(table[r]); c++ {
-			if table[r][c] == word[0] {
-				count += countWordsAt(table, word, r, c)
-			}
-		}
-	}
-	return count
-}
-
-func CountWordCrosses(table []string, word string) int {
-	locations := findWordLocations(table, word)
-	counts := map[location]int{}
-	total := 0
-	for _, each := range locations {
-		if count, ok := counts[each]; ok {
-			if count > 1 {
-				panic("wtf")
-			}
-			counts[each]++
-			total++
-			shared.Logger.Info("Found word cross.", "location", each)
-		} else {
-			shared.Logger.Debug("Found half of word cross.", "location", each)
-			counts[each] = 1
-		}
-	}
-	return total
-}
-
-type direction struct {
-	x int
-	y int
-}
-
-func (v direction) turnRight() direction {
-	if v == dirNorth {
-		return dirEast
-	}
-	if v == dirEast {
-		return dirSouth
-	}
-	if v == dirSouth {
-		return dirWest
-	}
-	if v == dirWest {
-		return dirNorth
-	}
-	panic("no direction")
-}
-
-func countWordsAt(table []string, word string, row, col int) int {
-	directions := []direction{{1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}}
-	count := 0
-	for _, each := range directions {
-		if readTableAt(table, row, col, len(word), each) == word {
-			count++
-		}
-	}
-	return count
-}
-
 type vector struct {
-	loc location
-	dir direction
-}
-
-type location struct {
-	x int
-	y int
-}
-
-func (v location) toString() string {
-	return fmt.Sprintf("%dx%d", v.x, v.y)
-}
-
-func findWordLocations(table []string, word string) []location {
-	if len(word)%2 != 1 {
-		panic("only works with odd length words: 3, 5, 7, ...")
-	}
-	var locations []location
-	mid := len(word) / 2
-	for r := 0; r < len(table); r++ {
-		for c := 0; c < len(table[r]); c++ {
-			for _, each := range directions {
-				if each.x == 0 || each.y == 0 {
-					continue
-				}
-				if readTableAt(table, r, c, len(word), each) == word {
-					x := r + each.x*mid
-					y := c + each.y*mid
-					locations = append(locations, location{x, y})
-				}
-			}
-		}
-	}
-	return locations
-}
-
-func readTableAt(table []string, row, col, count int, dir direction) string {
-	result := ""
-	for range count {
-		if row < 0 || row >= len(table) {
-			break
-		}
-		line := table[row]
-		if col < 0 || col >= len(line) {
-			break
-		}
-		result += line[col : col+1]
-		row += dir.x
-		col += dir.y
-	}
-	return result
+	loc shared.Location
+	dir shared.Direction
 }
 
 func SumCorrectMiddlePageNumbers(lines []string) int {
@@ -287,63 +154,63 @@ func findRelevantRule(rules [][]int, a, b int) []int {
 
 type board struct {
 	curr    vector
-	blocks  *shared.Set[location]
+	blocks  *shared.Set[shared.Location]
 	visited *shared.Set[vector]
-	stepped *shared.Set[location]
+	stepped *shared.Set[shared.Location]
 	width   int
 	height  int
 }
 
-func newBoard(init location, blocks []location, width, height int) *board {
-	curr := vector{loc: init, dir: dirNorth}
+func newBoard(init shared.Location, blocks []shared.Location, width, height int) *board {
+	curr := vector{loc: init, dir: shared.DirNorth}
 	return &board{
 		curr:    curr,
 		blocks:  shared.NewSet(blocks),
 		visited: shared.NewSet([]vector{curr}),
-		stepped: shared.NewSet([]location{curr.loc}),
+		stepped: shared.NewSet([]shared.Location{curr.loc}),
 		width:   width,
 		height:  height,
 	}
 }
 
-func (v *board) deriveNextLocation() location {
-	return location{
-		x: v.curr.loc.x + v.curr.dir.y,
-		y: v.curr.loc.y + v.curr.dir.x,
+func (v *board) deriveNextLocation() shared.Location {
+	return shared.Location{
+		X: v.curr.loc.X + v.curr.dir.Y,
+		Y: v.curr.loc.Y + v.curr.dir.X,
 	}
 }
 
 func (v *board) deriveNextVector() vector {
 	return vector{
 		dir: v.curr.dir,
-		loc: location{
-			x: v.curr.loc.x + v.curr.dir.y,
-			y: v.curr.loc.y + v.curr.dir.x,
+		loc: shared.Location{
+			X: v.curr.loc.X + v.curr.dir.Y,
+			Y: v.curr.loc.Y + v.curr.dir.X,
 		},
 	}
 }
 
-func (v *board) isInside(l location) bool {
-	if l.x < 0 || l.y < 0 {
+func (v *board) isInside(l shared.Location) bool {
+	if l.X < 0 || l.Y < 0 {
 		return false
 	}
-	if l.x >= v.height {
+	if l.X >= v.height {
 		return false
 	}
-	return l.y < v.width
+	return l.Y < v.width
 }
 
 func (v *board) turn() {
 	v.visited.Add(v.curr)
 	v.stepped.Add(v.curr.loc)
-	v.curr.dir = v.curr.dir.turnRight()
+	v.curr.dir = v.curr.dir.TurnRight()
 }
 
-func (v *board) isBlock(l location) bool {
+func (v *board) isBlock(l shared.Location) bool {
 	return v.blocks.Has(l)
 }
 
-func (v *board) move(l location) {
+func (v *board) move(l shared.Location) {
 	v.curr.loc = l
 	v.visited.Add(v.curr)
 	v.stepped.Add(l)
@@ -403,17 +270,17 @@ func (v *board) print() string {
 	for range v.height {
 		lines = append(lines, strings.Repeat(" ", v.width))
 	}
-	v.blocks.Iter(func(item location) bool {
+	v.blocks.Iter(func(item shared.Location) bool {
 		setCharacter(lines, item, "#")
 		return true
 	})
-	locToDirs := map[location][]direction{}
+	locToDirs := map[shared.Location][]shared.Direction{}
 	v.visited.Iter(func(v vector) bool {
 		l := v.loc
 		if dirs, ok := locToDirs[l]; ok {
 			locToDirs[l] = append(dirs, v.dir)
 		} else {
-			locToDirs[l] = []direction{v.dir}
+			locToDirs[l] = []shared.Direction{v.dir}
 		}
 		return true
 	})
@@ -448,7 +315,7 @@ func CountDistinctPositions(lines []string) int {
 		shared.Logger.Debug(
 			"Move.",
 			"step",
-			fmt.Sprintf("%s -> %s", brd.curr.loc.toString(), next.toString()),
+			fmt.Sprintf("%s -> %s", brd.curr.loc.ToString(), next.ToString()),
 		)
 		brd.move(next)
 		counter--
@@ -459,9 +326,9 @@ func CountDistinctPositions(lines []string) int {
 	return brd.deriveVisitedCount()
 }
 
-func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[location] {
+func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Location] {
 	if len(lines) == 0 {
-		return shared.NewSet([]location{})
+		return shared.NewSet([]shared.Location{})
 	}
 	shared.Logger.Info("Derive infinite loop locations.")
 	brd := newBoard(
@@ -469,7 +336,7 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[location] {
 		findLocations(lines, '#'),
 		len(lines[0]),
 		len(lines))
-	indefLocations := shared.NewSet([]location{})
+	indefLocations := shared.NewSet([]shared.Location{})
 	for {
 		shared.Logger.Debug("Now.", "location", brd.curr)
 		if brd.findIndefiniteBlock() {
@@ -492,44 +359,44 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[location] {
 	return indefLocations
 }
 
-func findLocations(lines []string, c byte) []location {
-	locs := []location{}
+func findLocations(lines []string, c byte) []shared.Location {
+	locs := []shared.Location{}
 	for r := 0; r < len(lines); r++ {
 		for l := 0; l < len(lines[r]); l++ {
 			if lines[r][l] == c {
-				locs = append(locs, location{r, l})
+				locs = append(locs, shared.Location{X: r, Y: l})
 			}
 		}
 	}
 	return locs
 }
 
-func findCharacter(lines []string, char byte) location {
+func findCharacter(lines []string, char byte) shared.Location {
 	for r := 0; r < len(lines); r++ {
 		for c := 0; c < len(lines[r]); c++ {
 			if lines[r][c] == char {
-				return location{r, c}
+				return shared.Location{X: r, Y: c}
 			}
 		}
 	}
-	return location{-1, -1}
+	return shared.Location{X: -1, Y: -1}
 }
 
-func setCharacter(lines []string, loc location, char string) {
+func setCharacter(lines []string, loc shared.Location, char string) {
 	if char == "" || len(char) > 1 {
 		panic(fmt.Sprintf("Invalid character length(%d): \"%s\".", len(char), char))
 	}
-	line := lines[loc.x]
-	line = line[0:loc.y] + char + line[loc.y+1:]
-	lines[loc.x] = line
+	line := lines[loc.X]
+	line = line[0:loc.Y] + char + line[loc.Y+1:]
+	lines[loc.X] = line
 }
 
-func deriveDirCharacter(dirs []direction) string {
+func deriveDirCharacter(dirs []shared.Direction) string {
 	hor, ver := false, false
-	shared.NewSet(dirs).Iter(func(d direction) bool {
-		if d.x == 0 && d.y != 0 {
+	shared.NewSet(dirs).Iter(func(d shared.Direction) bool {
+		if d.X == 0 && d.Y != 0 {
 			ver = true
-		} else if d.x != 0 && d.y == 0 {
+		} else if d.X != 0 && d.Y == 0 {
 			hor = true
 		} else {
 			panic(fmt.Sprintf("Only horizontal or vertical are allowed: %v.", d))
