@@ -217,7 +217,7 @@ func (v Location) ToString() string {
 }
 
 func ToInts(s []string) (nums []int, err error) {
-	Logger.Info("Convert string slice to ints.", "length", len(s))
+	Logger.Debug("Convert string slice to ints.", "length", len(s))
 	for _, each := range s {
 		var n int
 		n, err = strconv.Atoi(each)
@@ -228,4 +228,22 @@ func ToInts(s []string) (nums []int, err error) {
 		nums = append(nums, n)
 	}
 	return
+}
+
+func MapValues[T any, U any](s []T, f func(v T) U) []U {
+	var result []U
+	for _, each := range s {
+		result = append(result, f(each))
+	}
+	return result
+}
+
+func FilterValues[T any](s []T, f func(v T) bool) []T {
+	var result []T
+	for _, each := range s {
+		if f(each) {
+			result = append(result, each)
+		}
+	}
+	return result
 }
