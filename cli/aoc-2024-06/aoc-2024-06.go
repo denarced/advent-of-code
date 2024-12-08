@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denarced/advent-of-code/lib/aoc2024"
+	"github.com/denarced/advent-of-code/lib/aoc2406"
 	"github.com/denarced/advent-of-code/shared"
 )
 
@@ -19,10 +19,10 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	fmt.Println("Distinct positions:", aoc2024.CountDistinctPositions(lines))
+	fmt.Println("Distinct positions:", aoc2406.CountDistinctPositions(lines))
 	fmt.Println(
 		"Count of blocks resulting in indefinite loops:",
-		aoc2024.CountBlocksForIndefiniteLoops(lines).Count(),
+		aoc2406.CountBlocksForIndefiniteLoops(lines).Count(),
 	)
 
 	shared.Logger.Info("Done.")

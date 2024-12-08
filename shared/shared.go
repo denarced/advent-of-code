@@ -215,3 +215,17 @@ type Location struct {
 func (v Location) ToString() string {
 	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }
+
+func ToInts(s []string) (nums []int, err error) {
+	Logger.Info("Convert string slice to ints.", "length", len(s))
+	for _, each := range s {
+		var n int
+		n, err = strconv.Atoi(each)
+		if err != nil {
+			Logger.Error("Failed to convert to int.", "string", each, "err", err)
+			return
+		}
+		nums = append(nums, n)
+	}
+	return
+}

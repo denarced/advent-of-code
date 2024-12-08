@@ -1,27 +1,11 @@
-// Package aoc2024 contains implementation for 2024 Advent of Code solutions.
-package aoc2024
+package aoc2406
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
 )
-
-func ToInts(s []string) (nums []int, err error) {
-	shared.Logger.Info("Convert string slice to ints.", "length", len(s))
-	for _, each := range s {
-		var n int
-		n, err = strconv.Atoi(each)
-		if err != nil {
-			shared.Logger.Error("Failed to convert to int.", "string", each, "err", err)
-			return
-		}
-		nums = append(nums, n)
-	}
-	return
-}
 
 type vector struct {
 	loc shared.Location

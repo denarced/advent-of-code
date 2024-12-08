@@ -1,4 +1,4 @@
-package aoc2024
+package aoc2406
 
 import (
 	"strings"
@@ -8,28 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToColumns(t *testing.T) {
-	run := func(name string, lines, expectedLeft, expectedRight []string) {
-		t.Run(name, func(t *testing.T) {
-			shared.InitTestLogging(t)
-			req := require.New(t)
-			left, right := shared.ToColumns(lines)
-			req.Equal(expectedLeft, left)
-			req.Equal(expectedRight, right)
-		})
-	}
-
-	run("empty", []string{}, nil, nil)
-	run("space", []string{"abc efg"}, []string{"abc"}, []string{"efg"})
-	run("two spaces", []string{"313  666"}, []string{"313"}, []string{"666"})
-}
-
 func TestToInts(t *testing.T) {
 	run := func(name string, s []string, expected []int, errMessage string) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
-			actual, err := ToInts(s)
+			actual, err := shared.ToInts(s)
 			if errMessage == "" {
 				req.Nil(err)
 				req.Equal(expected, actual)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denarced/advent-of-code/lib/aoc2024"
 	"github.com/denarced/advent-of-code/lib/aoc2401"
 	"github.com/denarced/advent-of-code/shared"
 )
@@ -22,10 +21,10 @@ func main() {
 	shared.Die(err, "ReadLines")
 
 	leftStrs, rightStrs := shared.ToColumns(lines)
-	left, err := aoc2024.ToInts(leftStrs)
+	left, err := shared.ToInts(leftStrs)
 	shared.Die(err, "ToInts(leftStrs)")
 
-	right, err := aoc2024.ToInts(rightStrs)
+	right, err := shared.ToInts(rightStrs)
 	shared.Die(err, "ToInts(rightStrs)")
 
 	fmt.Println("Distance:", aoc2401.Distance(left, right))
