@@ -2,6 +2,7 @@ package aoc2024
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -57,11 +58,11 @@ func TestAdvent01Similarity(t *testing.T) {
 }
 
 func TestToInts(t *testing.T) {
-	run := func(name string, strings []string, expected []int, errMessage string) {
+	run := func(name string, s []string, expected []int, errMessage string) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
-			actual, err := ToInts(strings)
+			actual, err := ToInts(s)
 			if errMessage == "" {
 				req.Nil(err)
 				req.Equal(expected, actual)
@@ -264,20 +265,338 @@ func TestCountDistinctPositions(t *testing.T) {
 	}
 
 	run("empty", []string{}, 0)
-	run(
-		"example",
+	run("example", advent06Lines(), 41)
+}
+
+func advent06Lines() []string {
+	padded := []string{
+		//        0 1 2 3 4 5 6 7 8 9
+		/* 0 */ " . . . . # . . . . .",
+		/* 1 */ " . . . . . . . . . #",
+		/* 2 */ " . . . . . . . . . .",
+		/* 3 */ " . . # . . . . . . .",
+		/* 4 */ " . . . . . . . # . .",
+		/* 5 */ " . . . . . . . . . .",
+		/* 6 */ " . # . o ^ . . . . .",
+		/* 7 */ " . . . . . . o o # .",
+		/* 8 */ " # o . o . . . . . .",
+		/* 9 */ " . . . . . . # o . .",
+	}
+	return stripPadding(padded)
+}
+
+func stripPadding(lines []string) []string {
+	stripped := make([]string, 0, len(lines))
+	for _, each := range lines {
+		stripped = append(stripped, strings.ReplaceAll(each, " ", ""))
+	}
+	return stripped
+}
+
+func TestCountBlocksForIndefiniteLoops(t *testing.T) {
+	run := func(name string, lines []string) {
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			expected := extractExpected(lines)
+			actual := CountBlocksForIndefiniteLoops(lines)
+			diffLocationSets(t, expected, actual)
+		})
+	}
+
+	run("06 example", advent06Lines())
+	run("straight line", straight06Lines())
+	run("square", square06Lines())
+	run("four square trap", fourSquareTrap06Lines())
+	run("two square trap", twoSquareTrap06Lines())
+	run("immediate block", immediateBlock06Lines())
+	run("straight line no loops", straightLineNoLoops06Lines())
+	run("big", big06Lines())
+	run("spiral", spiral06Lines())
+	run("inwards spiral", inwardsSpiral06Lines())
+	run("snake", snake06Lines())
+	run("crossing", crossing06Lines())
+	run("precursor", precursor06Lines())
+}
+
+func straight06Lines() []string {
+	return stripPadding(
 		[]string{
-			// 23456789
-			"....#.....", // 0
-			".........#", // 1
-			"..........", // 2
-			"..#.......", // 3
-			".......#..", // 4
-			"..........", // 5
-			".#..^.....", // 6
-			"........#.", // 7
-			"#.........", // 8
-			"......#...", // 9
+			//        0 1 2 3
+			/* 0 */ " . . # . ",
+			/* 1 */ " . . . # ",
+			/* 2 */ " . . . . ",
+			/* 3 */ " . o ^ . ",
+			/* 4 */ " . . # . ",
 		},
-		41)
+	)
+}
+
+func extractExpected(lines []string) *shared.Set[location] {
+	locations := []location{}
+	for r := 0; r < len(lines); r++ {
+		for c := 0; c < len(lines[r]); c++ {
+			if lines[r][c] == 'o' {
+				locations = append(locations, location{r, c})
+			}
+		}
+	}
+	return shared.NewSet(locations)
+}
+
+func square06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . . . . . . . . ",
+			/* 1 */ " . # . . o . . . ",
+			/* 2 */ " . o . o . o . # ",
+			/* 3 */ " . o . # . . . . ",
+			/* 4 */ " . o . # . . . . ",
+			/* 5 */ " . . . # . . # . ",
+			/* 6 */ " # ^ . . . . . . ",
+			/* 7 */ " . . # . # . . . ",
+		},
+	)
+}
+
+func fourSquareTrap06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . . . . . . . . ",
+			/* 1 */ " . . # . o . . . ",
+			/* 2 */ " . . . . . . # . ",
+			/* 3 */ " . . . # . . . . ",
+			/* 4 */ " . . ^ . . # . . ",
+			/* 5 */ " . . . . . . . . ",
+			/* 6 */ " . . . . . . . . ",
+			/* 7 */ " . . . . . . . . ",
+		},
+	)
+}
+
+func twoSquareTrap06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . . . . . . . . ",
+			/* 1 */ " . . # . . o . . ",
+			/* 2 */ " . . . . . . # . ",
+			/* 3 */ " . . . . # . . . ",
+			/* 4 */ " . . ^ . . # . . ",
+			/* 5 */ " . . . . . . . . ",
+			/* 6 */ " . . . . . . . . ",
+			/* 7 */ " . . . . . . . . ",
+		},
+	)
+}
+
+func immediateBlock06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2
+			/* 0 */ " . o . ",
+			/* 1 */ " # ^ # ",
+			/* 2 */ " . # . ",
+		},
+	)
+}
+
+func straightLineNoLoops06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2
+			/* 0 */ " . . . ",
+			/* 1 */ " . # . ",
+			/* 2 */ " . . . ",
+			/* 3 */ " . ^ . ",
+		},
+	)
+}
+
+func big06Lines() []string {
+	return stripPadding(
+		[]string{
+			//                             1 1 1
+			//         0 1 2 3 4 5 6 7 8 9 0 1 2
+			/*  0 */ " . # . . . . . . . . . . . ",
+			/*  1 */ " . o . . . # . . . . . . . ",
+			/*  2 */ " . . . . . . . . o o . . # ",
+			/*  3 */ " o . . . . o # . . . . . . ",
+			/*  4 */ " . o . . # o o . o # . . . ",
+			/*  5 */ " . . . . . . . . # . . . . ",
+			/*  6 */ " . . . . . . . . . . . . . ",
+			/*  7 */ " . . . . . # . . . . . . . ",
+			/*  8 */ " . . . . . . . # . . . o . ",
+			/*  9 */ " . . . . . . . . . . . . . ",
+			/* 10 */ " # . . o . o . . . . . . . ",
+			/* 11 */ " . . . . . . . . . . . # . ",
+			/* 12 */ " . . . . . . . . . . . . . ",
+			/* 13 */ " . . . . ^ . . . . . . . . ",
+			/* 14 */ " . . . . . . . . . . . . . ",
+		},
+	)
+}
+
+func diffLocationSets(t *testing.T, expected, actual *shared.Set[location]) {
+	stringify := func(l location) string {
+		return l.toString()
+	}
+	require.ElementsMatch(
+		t,
+		mapValues(expected.ToSlice(), stringify),
+		mapValues(actual.ToSlice(), stringify),
+	)
+}
+
+func TestBoardCopy(t *testing.T) {
+	shared.InitTestLogging(t)
+
+	// EXERCISE
+	orig := newBoard(location{}, []location{}, 10, 11)
+	copied := orig.copy()
+	copied.move(copied.deriveNextLocation()) // Curr.loc and visited modified.
+	copied.blocks.Add(location{6, 7})
+	copied.width = 20
+	copied.height = 21
+
+	req := require.New(t)
+	// VERIFY
+	req.Equal(vector{dir: dirNorth}, orig.curr, "curr")
+	req.Equal(shared.NewSet([]location{}), orig.blocks, "blocks")
+	req.Equal(shared.NewSet([]vector{{dir: dirNorth}}), orig.visited, "visited")
+	req.Equal(10, orig.width, "width")
+	req.Equal(11, orig.height, "height")
+}
+
+func spiral06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . . # . . . . . ",
+			/* 1 */ " . . . . . o . # ",
+			/* 2 */ " . . o # . . . . ",
+			/* 3 */ " . . . . . # . . ",
+			/* 4 */ " . . . ^ . . . . ",
+			/* 5 */ " . # o . . . . . ",
+			/* 6 */ " . . . . # . o . ",
+			/* 7 */ " . . . . . . . . ",
+		},
+	)
+}
+
+func inwardsSpiral06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " # . . . o . . . ",
+			/* 1 */ " . . . . . . . # ",
+			/* 2 */ " . . # . o . . . ",
+			/* 3 */ " . . . . . # . . ",
+			/* 4 */ " . . . # . . . . ",
+			/* 5 */ " . . . . # . . . ",
+			/* 6 */ " . # . . . . . . ",
+			/* 7 */ " ^ . . . . . # . ",
+		},
+	)
+}
+
+func snake06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " # . . o . . . . ",
+			/* 1 */ " . . . . . . # . ",
+			/* 2 */ " . . # o . . . . ",
+			/* 3 */ " . # . . . . o # ",
+			/* 4 */ " . . . . . # o . ",
+			/* 5 */ " . . # . . . . . ",
+			/* 6 */ " . . . . . . # . ",
+			/* 7 */ " ^ . . . . . . . ",
+		},
+	)
+}
+
+func crossing06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . . . . # . . . ",
+			/* 1 */ " . # . . . . # . ",
+			/* 2 */ " # . . o . . o # ",
+			/* 3 */ " . . . . . # o . ",
+			/* 4 */ " . . . . . . o . ",
+			/* 5 */ " . . . . . . . . ",
+			/* 6 */ " o . . o . o . . ",
+			/* 7 */ " . . . . ^ . # . ",
+		},
+	)
+}
+
+func precursor06Lines() []string {
+	return stripPadding(
+		[]string{
+			//        0 1 2 3 4 5 6 7
+			/* 0 */ " . # . o . . . . ",
+			/* 1 */ " . . . . . . . # ",
+			/* 2 */ " . . . o . . . # ",
+			/* 3 */ " . . . . . . . # ",
+			/* 4 */ " . . . . . . . . ",
+			/* 5 */ " . . . . . . . . ",
+			/* 6 */ " . . # . . . . . ",
+			/* 7 */ " . ^ . . . . # . ",
+		},
+	)
+}
+
+func TestBoardPrint(t *testing.T) {
+	run := func(name string, brd *board, expected string) {
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			actual := brd.print()
+			req.Equal(expected, actual)
+		})
+	}
+
+	run(
+		"start",
+		newTestBoard(location{1, 1}, []location{{0, 1}}, nil, 3, 2),
+		strings.Join(
+			[]string{
+				" # ",
+				" * ",
+			},
+			"\n")+"\n")
+	run(
+		"n",
+		newTestBoard(
+			location{2, 2},
+			[]location{{0, 1}, {1, 3}},
+			[]vector{
+				{loc: location{2, 1}, dir: dirNorth},
+				{loc: location{1, 1}, dir: dirNorth},
+				{loc: location{1, 1}, dir: dirEast},
+				{loc: location{1, 2}, dir: dirEast},
+				{loc: location{1, 2}, dir: dirSouth},
+				{loc: location{2, 2}, dir: dirSouth},
+			},
+			4,
+			3),
+		strings.Join(
+			[]string{
+				//       0123
+				/* 0 */ " #  ",
+				/* 1 */ " ++#",
+				/* 2 */ " |* ",
+			},
+			"\n")+"\n")
+}
+
+func newTestBoard(curr location, blocks []location, visited []vector, w, h int) *board {
+	brd := newBoard(curr, blocks, w, h)
+	if visited != nil {
+		brd.visited = shared.NewSet(visited)
+	}
+	return brd
 }

@@ -17,7 +17,7 @@ var (
 
 func deriveLoggingLevel() slog.Level {
 	defaultLevel := slog.LevelInfo
-	rawValue, exists := os.LookupEnv("aoc-logging_level")
+	rawValue, exists := os.LookupEnv("aoc_logging_level")
 	if !exists {
 		return defaultLevel
 	}

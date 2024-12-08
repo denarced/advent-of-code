@@ -20,6 +20,10 @@ func main() {
 	shared.Die(err, "ReadLines")
 
 	fmt.Println("Distinct positions:", aoc2024.CountDistinctPositions(lines))
+	fmt.Println(
+		"Count of blocks resulting in indefinite loops:",
+		aoc2024.CountBlocksForIndefiniteLoops(lines).Count(),
+	)
 
 	shared.Logger.Info("Done.")
 }

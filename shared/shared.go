@@ -107,3 +107,44 @@ func (v *Set[T]) Has(item T) bool {
 func (v *Set[T]) Count() int {
 	return len(v.m)
 }
+
+func (v *Set[T]) Copy() *Set[T] {
+	m := make(map[T]int, len(v.m))
+	for key, val := range v.m {
+		m[key] = val
+	}
+	return &Set[T]{
+		m: m,
+	}
+}
+
+func (v *Set[T]) Iter(cb func(item T) bool) {
+	for each := range v.m {
+		if !cb(each) {
+			break
+		}
+	}
+}
+
+func (v *Set[T]) ToSlice() []T {
+	s := make([]T, 0, len(v.m))
+	for each := range v.m {
+		s = append(s, each)
+	}
+	return s
+}
+
+func (v *Set[T]) Clear() {
+	v.m = map[T]int{}
+}
+
+type number interface {
+	uint | uint8 | uint16 | uint32 | uint64 | int | int8 | int16 | int32 | int64 | float32 | float64
+}
+
+func Max[T number](a, b T) T {
+	if a > b {
+		return a
+	}
+	return b
+}
