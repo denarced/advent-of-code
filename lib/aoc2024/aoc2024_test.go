@@ -44,51 +44,6 @@ func TestToInts(t *testing.T) {
 	run("failure", []string{"e"}, nil, "invalid syntax")
 }
 
-func TestSumCorrectMiddlePageNumbers(t *testing.T) {
-	shared.InitTestLogging(t)
-	// 143 is from the problem description.
-	require.Equal(t, 143, SumCorrectMiddlePageNumbers(advent05Lines()))
-}
-
-func advent05Lines() []string {
-	// Example values from problem description.
-	return []string{
-		"47|53",
-		"97|13",
-		"97|61",
-		"97|47",
-		"75|29",
-		"61|13",
-		"75|53",
-		"29|13",
-		"97|29",
-		"53|29",
-		"61|53",
-		"97|53",
-		"61|29",
-		"47|13",
-		"75|47",
-		"97|75",
-		"47|61",
-		"75|61",
-		"47|29",
-		"75|13",
-		"53|13",
-		"75,47,61,53,29",
-		"97,61,53,29,13",
-		"75,29,13",
-		"75,97,47,61,53",
-		"61,13,29",
-		"97,13,75,29,47",
-	}
-}
-
-func TestSumIncorrectMiddlePageNumbers(t *testing.T) {
-	shared.InitTestLogging(t)
-	// 123 is from the problem description.
-	require.Equal(t, 123, SumIncorrectMiddlePageNumbers(advent05Lines()))
-}
-
 func TestCountDistinctPositions(t *testing.T) {
 	run := func(name string, lines []string, expected int) {
 		t.Run(name, func(t *testing.T) {
@@ -134,7 +89,7 @@ func TestCountBlocksForIndefiniteLoops(t *testing.T) {
 			shared.InitTestLogging(t)
 			expected := extractExpected(lines)
 			actual := CountBlocksForIndefiniteLoops(lines)
-			diffLocationSets(t, expected, actual)
+			shared.DiffLocationSets(t, expected, actual)
 		})
 	}
 
@@ -270,17 +225,6 @@ func big06Lines() []string {
 			/* 13 */ " . . . . ^ . . . . . . . . ",
 			/* 14 */ " . . . . . . . . . . . . . ",
 		},
-	)
-}
-
-func diffLocationSets(t *testing.T, expected, actual *shared.Set[shared.Location]) {
-	stringify := func(l shared.Location) string {
-		return l.ToString()
-	}
-	require.ElementsMatch(
-		t,
-		mapValues(expected.ToSlice(), stringify),
-		mapValues(actual.ToSlice(), stringify),
 	)
 }
 

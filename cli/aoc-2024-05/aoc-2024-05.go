@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denarced/advent-of-code/lib/aoc2024"
+	"github.com/denarced/advent-of-code/lib/aoc2405"
 	"github.com/denarced/advent-of-code/shared"
 )
 
@@ -19,8 +19,8 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	fmt.Println("Correct middle page number sum:", aoc2024.SumCorrectMiddlePageNumbers(lines))
-	fmt.Println("Incorrect middle page number sum:", aoc2024.SumIncorrectMiddlePageNumbers(lines))
+	fmt.Println("Correct middle page number sum:", aoc2405.SumCorrectMiddlePageNumbers(lines))
+	fmt.Println("Incorrect middle page number sum:", aoc2405.SumIncorrectMiddlePageNumbers(lines))
 
 	shared.Logger.Info("Done.")
 }
