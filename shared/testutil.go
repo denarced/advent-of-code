@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func DiffLocationSets(t *testing.T, expected, actual *Set[Location]) {
-	stringify := func(l Location) string {
+func DiffLocSets(t *testing.T, expected, actual *Set[Loc]) {
+	stringify := func(l Loc) string {
 		return l.ToString()
 	}
 	require.ElementsMatch(

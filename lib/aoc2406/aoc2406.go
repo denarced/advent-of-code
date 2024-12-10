@@ -8,33 +8,33 @@ import (
 )
 
 type vector struct {
-	loc shared.Location
+	loc shared.Loc
 	dir shared.Direction
 }
 
 type board struct {
 	curr    vector
-	blocks  *shared.Set[shared.Location]
+	blocks  *shared.Set[shared.Loc]
 	visited *shared.Set[vector]
-	stepped *shared.Set[shared.Location]
+	stepped *shared.Set[shared.Loc]
 	width   int
 	height  int
 }
 
-func newBoard(init shared.Location, blocks []shared.Location, width, height int) *board {
+func newBoard(init shared.Loc, blocks []shared.Loc, width, height int) *board {
 	curr := vector{loc: init, dir: shared.DirNorth}
 	return &board{
 		curr:    curr,
 		blocks:  shared.NewSet(blocks),
 		visited: shared.NewSet([]vector{curr}),
-		stepped: shared.NewSet([]shared.Location{curr.loc}),
+		stepped: shared.NewSet([]shared.Loc{curr.loc}),
 		width:   width,
 		height:  height,
 	}
 }
 
-func (v *board) deriveNextLocation() shared.Location {
-	return shared.Location{
+func (v *board) deriveNextLocation() shared.Loc {
+	return shared.Loc{
 		X: v.curr.loc.X + v.curr.dir.Y,
 		Y: v.curr.loc.Y + v.curr.dir.X,
 	}
@@ -43,14 +43,14 @@ func (v *board) deriveNextLocation() shared.Location {
 func (v *board) deriveNextVector() vector {
 	return vector{
 		dir: v.curr.dir,
-		loc: shared.Location{
+		loc: shared.Loc{
 			X: v.curr.loc.X + v.curr.dir.Y,
 			Y: v.curr.loc.Y + v.curr.dir.X,
 		},
 	}
 }
 
-func (v *board) isInside(l shared.Location) bool {
+func (v *board) isInside(l shared.Loc) bool {
 	if l.X < 0 || l.Y < 0 {
 		return false
 	}
@@ -66,11 +66,11 @@ func (v *board) turn() {
 	v.curr.dir = v.curr.dir.TurnRight()
 }
 
-func (v *board) isBlock(l shared.Location) bool {
+func (v *board) isBlock(l shared.Loc) bool {
 	return v.blocks.Has(l)
 }
 
-func (v *board) move(l shared.Location) {
+func (v *board) move(l shared.Loc) {
 	v.curr.loc = l
 	v.visited.Add(v.curr)
 	v.stepped.Add(l)
@@ -130,11 +130,11 @@ func (v *board) print() string {
 	for range v.height {
 		lines = append(lines, strings.Repeat(" ", v.width))
 	}
-	v.blocks.Iter(func(item shared.Location) bool {
+	v.blocks.Iter(func(item shared.Loc) bool {
 		setCharacter(lines, item, "#")
 		return true
 	})
-	locToDirs := map[shared.Location][]shared.Direction{}
+	locToDirs := map[shared.Loc][]shared.Direction{}
 	v.visited.Iter(func(v vector) bool {
 		l := v.loc
 		if dirs, ok := locToDirs[l]; ok {
@@ -186,9 +186,9 @@ func CountDistinctPositions(lines []string) int {
 	return brd.deriveVisitedCount()
 }
 
-func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Location] {
+func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 	if len(lines) == 0 {
-		return shared.NewSet([]shared.Location{})
+		return shared.NewSet([]shared.Loc{})
 	}
 	shared.Logger.Info("Derive infinite loop locations.")
 	brd := newBoard(
@@ -196,7 +196,7 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Location] 
 		findLocations(lines, '#'),
 		len(lines[0]),
 		len(lines))
-	indefLocations := shared.NewSet([]shared.Location{})
+	indefLocations := shared.NewSet([]shared.Loc{})
 	for {
 		shared.Logger.Debug("Now.", "location", brd.curr)
 		if brd.findIndefiniteBlock() {
@@ -219,30 +219,30 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Location] 
 	return indefLocations
 }
 
-func findLocations(lines []string, c byte) []shared.Location {
-	locs := []shared.Location{}
+func findLocations(lines []string, c byte) []shared.Loc {
+	locs := []shared.Loc{}
 	for r := 0; r < len(lines); r++ {
 		for l := 0; l < len(lines[r]); l++ {
 			if lines[r][l] == c {
-				locs = append(locs, shared.Location{X: r, Y: l})
+				locs = append(locs, shared.Loc{X: r, Y: l})
 			}
 		}
 	}
 	return locs
 }
 
-func findCharacter(lines []string, char byte) shared.Location {
+func findCharacter(lines []string, char byte) shared.Loc {
 	for r := 0; r < len(lines); r++ {
 		for c := 0; c < len(lines[r]); c++ {
 			if lines[r][c] == char {
-				return shared.Location{X: r, Y: c}
+				return shared.Loc{X: r, Y: c}
 			}
 		}
 	}
-	return shared.Location{X: -1, Y: -1}
+	return shared.Loc{X: -1, Y: -1}
 }
 
-func setCharacter(lines []string, loc shared.Location, char string) {
+func setCharacter(lines []string, loc shared.Loc, char string) {
 	if char == "" || len(char) > 1 {
 		panic(fmt.Sprintf("Invalid character length(%d): \"%s\".", len(char), char))
 	}

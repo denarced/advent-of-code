@@ -207,12 +207,12 @@ func (v Direction) TurnRight() Direction {
 	panic("no direction")
 }
 
-type Location struct {
+type Loc struct {
 	X int
 	Y int
 }
 
-func ParseLoc(s string) Location {
+func ParseLoc(s string) Loc {
 	var pieces []string
 	if strings.Contains(s, " ") {
 		pieces = strings.Fields(s)
@@ -220,14 +220,14 @@ func ParseLoc(s string) Location {
 		pieces = strings.Split(s, "x")
 	}
 	if len(pieces) != 2 {
-		panic(fmt.Sprintf("Invalid Location string: %s.", s))
+		panic(fmt.Sprintf("Invalid Loc string: %s.", s))
 	}
 	ints, err := ToInts(pieces)
 	Die(err, "ParseLoc -> ToInts")
-	return Location{X: ints[0], Y: ints[1]}
+	return Loc{X: ints[0], Y: ints[1]}
 }
 
-func (v Location) ToString() string {
+func (v Loc) ToString() string {
 	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }
 

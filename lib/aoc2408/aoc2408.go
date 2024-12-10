@@ -30,7 +30,7 @@ func newBoard(lines []string) *board {
 // 0|
 // ..---
 // ..012
-type iterCb func(loc shared.Location, c rune)
+type iterCb func(loc shared.Loc, c rune)
 
 func (v *board) iter(cb iterCb) {
 	lineCount := len(v.lines)
@@ -38,7 +38,7 @@ func (v *board) iter(cb iterCb) {
 		line := v.lines[shared.Abs(y-lineCount+1)]
 		runes := []rune(line)
 		for x := 0; x < len(runes); x++ {
-			cb(shared.Location{X: x, Y: y}, runes[x])
+			cb(shared.Loc{X: x, Y: y}, runes[x])
 		}
 	}
 }
@@ -57,20 +57,20 @@ func CountUniqueAntinodeLocations(lines []string, resonantHarmonics bool) int {
 func deriveUniqueAntinodeLocations(
 	lines []string,
 	resonantHarmonics bool,
-) *shared.Set[shared.Location] {
-	antinodes := shared.NewSet([]shared.Location{})
+) *shared.Set[shared.Loc] {
+	antinodes := shared.NewSet([]shared.Loc{})
 	if len(lines) == 0 {
 		return antinodes
 	}
 	brd := newBoard(lines)
-	freqToAntennas := map[rune][]shared.Location{}
-	brd.iter(func(loc shared.Location, c rune) {
+	freqToAntennas := map[rune][]shared.Loc{}
+	brd.iter(func(loc shared.Loc, c rune) {
 		if isAntenna(c) {
 			existing, ok := freqToAntennas[c]
 			if ok {
 				freqToAntennas[c] = append(existing, loc)
 			} else {
-				freqToAntennas[c] = []shared.Location{loc}
+				freqToAntennas[c] = []shared.Loc{loc}
 			}
 		}
 	})
@@ -106,40 +106,40 @@ func isAntenna(c rune) bool {
 	return false
 }
 
-func createPermutations(locs []shared.Location) [][]shared.Location {
-	perms := [][]shared.Location{}
+func createPermutations(locs []shared.Loc) [][]shared.Loc {
+	perms := [][]shared.Loc{}
 	length := len(locs)
 	for i := 0; i < length; i++ {
 		for j := 0; j < length; j++ {
 			if i == j {
 				continue
 			}
-			perms = append(perms, []shared.Location{locs[i], locs[j]})
+			perms = append(perms, []shared.Loc{locs[i], locs[j]})
 		}
 	}
 	return perms
 }
 
 func deriveAntinodes(
-	a, b shared.Location,
+	a, b shared.Loc,
 	maxX, maxY int,
 	resonantHarmonics bool,
-) []shared.Location {
+) []shared.Loc {
 	if a == b {
 		panic(fmt.Sprintf("Not allowed to have identical locations. Location: %v.", a))
 	}
 	xDiff := b.X - a.X
 	yDiff := b.Y - a.Y
-	antinodes := []shared.Location{}
+	antinodes := []shared.Loc{}
 	if resonantHarmonics {
 		antinodes = append(antinodes, a, b)
 	}
 	// Need to have some kind of a limit to prevent infinite loops.
 	for i := 1; i < 1_000; i++ {
-		first := shared.Location{X: a.X - i*xDiff, Y: a.Y - i*yDiff}
-		second := shared.Location{X: b.X + i*xDiff, Y: b.Y + i*yDiff}
-		waveNodes := []shared.Location{}
-		for _, each := range []shared.Location{first, second} {
+		first := shared.Loc{X: a.X - i*xDiff, Y: a.Y - i*yDiff}
+		second := shared.Loc{X: b.X + i*xDiff, Y: b.Y + i*yDiff}
+		waveNodes := []shared.Loc{}
+		for _, each := range []shared.Loc{first, second} {
 			if isWithin(0, maxX, each.X) && isWithin(0, maxY, each.Y) {
 				waveNodes = append(waveNodes, each)
 			}

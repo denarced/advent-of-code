@@ -65,7 +65,7 @@ func TestCountBlocksForIndefiniteLoops(t *testing.T) {
 			shared.InitTestLogging(t)
 			expected := extractExpected(lines)
 			actual := CountBlocksForIndefiniteLoops(lines)
-			shared.DiffLocationSets(t, expected, actual)
+			shared.DiffLocSets(t, expected, actual)
 		})
 	}
 
@@ -97,12 +97,12 @@ func straight06Lines() []string {
 	)
 }
 
-func extractExpected(lines []string) *shared.Set[shared.Location] {
-	locations := []shared.Location{}
+func extractExpected(lines []string) *shared.Set[shared.Loc] {
+	locations := []shared.Loc{}
 	for r := 0; r < len(lines); r++ {
 		for c := 0; c < len(lines[r]); c++ {
 			if lines[r][c] == 'o' {
-				locations = append(locations, shared.Location{X: r, Y: c})
+				locations = append(locations, shared.Loc{X: r, Y: c})
 			}
 		}
 	}
@@ -208,17 +208,17 @@ func TestBoardCopy(t *testing.T) {
 	shared.InitTestLogging(t)
 
 	// EXERCISE
-	orig := newBoard(shared.Location{}, []shared.Location{}, 10, 11)
+	orig := newBoard(shared.Loc{}, []shared.Loc{}, 10, 11)
 	copied := orig.copy()
 	copied.move(copied.deriveNextLocation()) // Curr.loc and visited modified.
-	copied.blocks.Add(shared.Location{X: 6, Y: 7})
+	copied.blocks.Add(shared.Loc{X: 6, Y: 7})
 	copied.width = 20
 	copied.height = 21
 
 	req := require.New(t)
 	// VERIFY
 	req.Equal(vector{dir: shared.DirNorth}, orig.curr, "curr")
-	req.Equal(shared.NewSet([]shared.Location{}), orig.blocks, "blocks")
+	req.Equal(shared.NewSet([]shared.Loc{}), orig.blocks, "blocks")
 	req.Equal(shared.NewSet([]vector{{dir: shared.DirNorth}}), orig.visited, "visited")
 	req.Equal(10, orig.width, "width")
 	req.Equal(11, orig.height, "height")
@@ -316,7 +316,7 @@ func TestBoardPrint(t *testing.T) {
 
 	run(
 		"start",
-		newTestBoard(shared.Location{X: 1, Y: 1}, []shared.Location{{X: 0, Y: 1}}, nil, 3, 2),
+		newTestBoard(shared.Loc{X: 1, Y: 1}, []shared.Loc{{X: 0, Y: 1}}, nil, 3, 2),
 		strings.Join(
 			[]string{
 				" # ",
@@ -326,15 +326,15 @@ func TestBoardPrint(t *testing.T) {
 	run(
 		"n",
 		newTestBoard(
-			shared.Location{X: 2, Y: 2},
-			[]shared.Location{{X: 0, Y: 1}, {X: 1, Y: 3}},
+			shared.Loc{X: 2, Y: 2},
+			[]shared.Loc{{X: 0, Y: 1}, {X: 1, Y: 3}},
 			[]vector{
-				{loc: shared.Location{X: 2, Y: 1}, dir: shared.DirNorth},
-				{loc: shared.Location{X: 1, Y: 1}, dir: shared.DirNorth},
-				{loc: shared.Location{X: 1, Y: 1}, dir: shared.DirEast},
-				{loc: shared.Location{X: 1, Y: 2}, dir: shared.DirEast},
-				{loc: shared.Location{X: 1, Y: 2}, dir: shared.DirSouth},
-				{loc: shared.Location{X: 2, Y: 2}, dir: shared.DirSouth},
+				{loc: shared.Loc{X: 2, Y: 1}, dir: shared.DirNorth},
+				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.DirNorth},
+				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.DirEast},
+				{loc: shared.Loc{X: 1, Y: 2}, dir: shared.DirEast},
+				{loc: shared.Loc{X: 1, Y: 2}, dir: shared.DirSouth},
+				{loc: shared.Loc{X: 2, Y: 2}, dir: shared.DirSouth},
 			},
 			4,
 			3),
@@ -349,8 +349,8 @@ func TestBoardPrint(t *testing.T) {
 }
 
 func newTestBoard(
-	curr shared.Location,
-	blocks []shared.Location,
+	curr shared.Loc,
+	blocks []shared.Loc,
 	visited []vector,
 	w, h int,
 ) *board {

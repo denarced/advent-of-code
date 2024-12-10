@@ -47,9 +47,9 @@ func TestDeriveAntinodes(t *testing.T) {
 	run := func(
 		name string,
 		a,
-		b shared.Location,
+		b shared.Loc,
 		resonantHarmonics bool,
-		expected []shared.Location) {
+		expected []shared.Loc) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			require.ElementsMatch(t, expected, deriveAntinodes(a, b, 10, 10, resonantHarmonics))
@@ -61,23 +61,23 @@ func TestDeriveAntinodes(t *testing.T) {
 		shared.ParseLoc("0x0"),
 		shared.ParseLoc("1x1"),
 		false,
-		[]shared.Location{{X: 2, Y: 2}},
+		[]shared.Loc{{X: 2, Y: 2}},
 	)
 	run(
 		"6x4 8x5",
-		shared.Location{X: 6, Y: 4},
-		shared.Location{X: 4, Y: 5},
+		shared.Loc{X: 6, Y: 4},
+		shared.Loc{X: 4, Y: 5},
 		false,
-		[]shared.Location{
+		[]shared.Loc{
 			{X: 2, Y: 6},
 			{X: 8, Y: 3},
 		})
 	run(
 		"3x4 3x5",
-		shared.Location{X: 3, Y: 4},
-		shared.Location{X: 3, Y: 5},
+		shared.Loc{X: 3, Y: 4},
+		shared.Loc{X: 3, Y: 5},
 		true,
-		[]shared.Location{
+		[]shared.Loc{
 			{X: 3, Y: 0},
 			{X: 3, Y: 1},
 			{X: 3, Y: 2},
@@ -97,14 +97,14 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 		name string,
 		lines []string,
 		harmonics bool,
-		expected *shared.Set[shared.Location]) {
+		expected *shared.Set[shared.Loc]) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
-			shared.DiffLocationSets(t, expected, deriveUniqueAntinodeLocations(lines, harmonics))
+			shared.DiffLocSets(t, expected, deriveUniqueAntinodeLocations(lines, harmonics))
 		})
 	}
 
-	run("empty wo harmonics", []string{}, false, shared.NewSet([]shared.Location{}))
+	run("empty wo harmonics", []string{}, false, shared.NewSet([]shared.Loc{}))
 	run(
 		"minimal with harmonics",
 		shared.StripPadding([]string{
@@ -121,7 +121,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 			//       0 1 2 3 4 5 6 7 8 9
 		}),
 		true,
-		shared.NewSet([]shared.Location{
+		shared.NewSet([]shared.Loc{
 			{X: 0, Y: 0}, // 0
 			{X: 0, Y: 2}, // 3
 			{X: 1, Y: 3}, // 3
@@ -163,7 +163,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 		"example",
 		getExampleLines(),
 		true,
-		shared.NewSet([]shared.Location{
+		shared.NewSet([]shared.Loc{
 			{X: 0, Y: 11},
 			{X: 0, Y: 4},
 			{X: 1, Y: 10},

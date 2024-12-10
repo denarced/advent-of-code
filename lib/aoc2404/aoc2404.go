@@ -39,7 +39,7 @@ func countWordsAt(table []string, word string, row, col int) int {
 
 func CountWordCrosses(table []string, word string) int {
 	locations := findWordLocations(table, word)
-	counts := map[shared.Location]int{}
+	counts := map[shared.Loc]int{}
 	total := 0
 	for _, each := range locations {
 		if count, ok := counts[each]; ok {
@@ -57,11 +57,11 @@ func CountWordCrosses(table []string, word string) int {
 	return total
 }
 
-func findWordLocations(table []string, word string) []shared.Location {
+func findWordLocations(table []string, word string) []shared.Loc {
 	if len(word)%2 != 1 {
 		panic("only works with odd length words: 3, 5, 7, ...")
 	}
-	var locations []shared.Location
+	var locations []shared.Loc
 	mid := len(word) / 2
 	for r := 0; r < len(table); r++ {
 		for c := 0; c < len(table[r]); c++ {
@@ -72,7 +72,7 @@ func findWordLocations(table []string, word string) []shared.Location {
 				if readTableAt(table, r, c, len(word), each) == word {
 					x := r + each.X*mid
 					y := c + each.Y*mid
-					locations = append(locations, shared.Location{X: x, Y: y})
+					locations = append(locations, shared.Loc{X: x, Y: y})
 				}
 			}
 		}
