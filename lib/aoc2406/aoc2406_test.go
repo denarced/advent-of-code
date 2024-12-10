@@ -56,15 +56,7 @@ func advent06Lines() []string {
 		/* 8 */ " # o . o . . . . . .",
 		/* 9 */ " . . . . . . # o . .",
 	}
-	return stripPadding(padded)
-}
-
-func stripPadding(lines []string) []string {
-	stripped := make([]string, 0, len(lines))
-	for _, each := range lines {
-		stripped = append(stripped, strings.ReplaceAll(each, " ", ""))
-	}
-	return stripped
+	return shared.StripPadding(padded)
 }
 
 func TestCountBlocksForIndefiniteLoops(t *testing.T) {
@@ -93,7 +85,7 @@ func TestCountBlocksForIndefiniteLoops(t *testing.T) {
 }
 
 func straight06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3
 			/* 0 */ " . . # . ",
@@ -118,7 +110,7 @@ func extractExpected(lines []string) *shared.Set[shared.Location] {
 }
 
 func square06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . . . . . . . . ",
@@ -134,7 +126,7 @@ func square06Lines() []string {
 }
 
 func fourSquareTrap06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . . . . . . . . ",
@@ -150,7 +142,7 @@ func fourSquareTrap06Lines() []string {
 }
 
 func twoSquareTrap06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . . . . . . . . ",
@@ -166,7 +158,7 @@ func twoSquareTrap06Lines() []string {
 }
 
 func immediateBlock06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2
 			/* 0 */ " . o . ",
@@ -177,7 +169,7 @@ func immediateBlock06Lines() []string {
 }
 
 func straightLineNoLoops06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2
 			/* 0 */ " . . . ",
@@ -189,7 +181,7 @@ func straightLineNoLoops06Lines() []string {
 }
 
 func big06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//                             1 1 1
 			//         0 1 2 3 4 5 6 7 8 9 0 1 2
@@ -233,7 +225,7 @@ func TestBoardCopy(t *testing.T) {
 }
 
 func spiral06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . . # . . . . . ",
@@ -249,7 +241,7 @@ func spiral06Lines() []string {
 }
 
 func inwardsSpiral06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " # . . . o . . . ",
@@ -265,7 +257,7 @@ func inwardsSpiral06Lines() []string {
 }
 
 func snake06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " # . . o . . . . ",
@@ -281,7 +273,7 @@ func snake06Lines() []string {
 }
 
 func crossing06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . . . . # . . . ",
@@ -297,7 +289,7 @@ func crossing06Lines() []string {
 }
 
 func precursor06Lines() []string {
-	return stripPadding(
+	return shared.StripPadding(
 		[]string{
 			//        0 1 2 3 4 5 6 7
 			/* 0 */ " . # . o . . . . ",

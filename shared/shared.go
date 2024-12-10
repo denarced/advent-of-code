@@ -212,6 +212,21 @@ type Location struct {
 	Y int
 }
 
+func ParseLoc(s string) Location {
+	var pieces []string
+	if strings.Contains(s, " ") {
+		pieces = strings.Fields(s)
+	} else {
+		pieces = strings.Split(s, "x")
+	}
+	if len(pieces) != 2 {
+		panic(fmt.Sprintf("Invalid Location string: %s.", s))
+	}
+	ints, err := ToInts(pieces)
+	Die(err, "ParseLoc -> ToInts")
+	return Location{X: ints[0], Y: ints[1]}
+}
+
 func (v Location) ToString() string {
 	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }
@@ -246,4 +261,12 @@ func FilterValues[T any](s []T, f func(v T) bool) []T {
 		}
 	}
 	return result
+}
+
+func StripPadding(lines []string) []string {
+	stripped := make([]string, 0, len(lines))
+	for _, each := range lines {
+		stripped = append(stripped, strings.ReplaceAll(each, " ", ""))
+	}
+	return stripped
 }
