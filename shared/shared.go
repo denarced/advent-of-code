@@ -270,3 +270,72 @@ func StripPadding(lines []string) []string {
 	}
 	return stripped
 }
+
+type Board struct {
+	lines []string
+	MaxX  int
+	MaxY  int
+}
+
+func NewBoard(lines []string) *Board {
+	brd := &Board{lines: lines}
+	if len(lines) == 0 {
+		return brd
+	}
+	brd.MaxY = len(lines) - 1
+	brd.MaxX = len([]rune(lines[0])) - 1
+	Logger.Info("Board created, max coordinates.", "x", brd.MaxX, "y", brd.MaxY)
+	return brd
+}
+
+// Loc is in proper x-y coordinates.
+//
+// 2|
+// 1|
+// 0|
+// ..---
+// ..012
+type BoardIterCb func(loc Loc, c rune)
+
+func (v *Board) Iter(cb BoardIterCb) {
+	lineCount := len(v.lines)
+	for y := 0; y < lineCount; y++ {
+		line := v.lines[Abs(y-lineCount+1)]
+		runes := []rune(line)
+		for x := 0; x < len(runes); x++ {
+			cb(Loc{X: x, Y: y}, runes[x])
+		}
+	}
+}
+
+func (v *Board) Get(loc Loc) (c rune, ok bool) {
+	x := loc.X
+	if x < 0 || v.MaxX < x {
+		return
+	}
+	y := loc.Y
+	if y < 0 || v.MaxY < y {
+		return
+	}
+	line := v.lines[Abs(y-len(v.lines)+1)]
+	c = []rune(line)[x]
+	ok = true
+	return
+}
+
+func (v *Board) NextTo(loc Loc, c rune) []Loc {
+	locs := []Loc{}
+	for _, xd := range []int{-1, 0, 1} {
+		for _, yd := range []int{-1, 0, 1} {
+			if xd == 0 && yd == 0 || xd != 0 && yd != 0 {
+				continue
+			}
+			near := Loc{X: loc.X + xd, Y: loc.Y + yd}
+			atC, ok := v.Get(near)
+			if ok && atC == c {
+				locs = append(locs, near)
+			}
+		}
+	}
+	return locs
+}

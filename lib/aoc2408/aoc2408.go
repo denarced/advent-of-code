@@ -6,43 +6,6 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-type board struct {
-	lines []string
-	maxX  int
-	maxY  int
-}
-
-func newBoard(lines []string) *board {
-	brd := &board{lines: lines}
-	if len(lines) == 0 {
-		return brd
-	}
-	brd.maxY = len(lines) - 1
-	brd.maxX = len([]rune(lines[0])) - 1
-	shared.Logger.Info("Board max coordinates.", "x", brd.maxX, "y", brd.maxY)
-	return brd
-}
-
-// Loc is in proper x-y coordinates.
-//
-// 2|
-// 1|
-// 0|
-// ..---
-// ..012
-type iterCb func(loc shared.Loc, c rune)
-
-func (v *board) iter(cb iterCb) {
-	lineCount := len(v.lines)
-	for y := 0; y < lineCount; y++ {
-		line := v.lines[shared.Abs(y-lineCount+1)]
-		runes := []rune(line)
-		for x := 0; x < len(runes); x++ {
-			cb(shared.Loc{X: x, Y: y}, runes[x])
-		}
-	}
-}
-
 func CountUniqueAntinodeLocations(lines []string, resonantHarmonics bool) int {
 	shared.Logger.Info(
 		"Count unique antinode locations.",
@@ -62,9 +25,9 @@ func deriveUniqueAntinodeLocations(
 	if len(lines) == 0 {
 		return antinodes
 	}
-	brd := newBoard(lines)
+	brd := shared.NewBoard(lines)
 	freqToAntennas := map[rune][]shared.Loc{}
-	brd.iter(func(loc shared.Loc, c rune) {
+	brd.Iter(func(loc shared.Loc, c rune) {
 		if isAntenna(c) {
 			existing, ok := freqToAntennas[c]
 			if ok {
@@ -81,8 +44,8 @@ func deriveUniqueAntinodeLocations(
 			for _, each := range deriveAntinodes(
 				perm[0],
 				perm[1],
-				brd.maxX,
-				brd.maxY,
+				brd.MaxX,
+				brd.MaxY,
 				resonantHarmonics) {
 				antinodes.Add(each)
 			}
