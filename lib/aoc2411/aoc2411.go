@@ -28,21 +28,35 @@ func CountStones(blinkCount int, stoneValues []int) int {
 	cycle := 10_000_000
 	round := cycle
 	totalCount := 0
+	halfBlink := blinkCount / 2
 	for len(stones) > 0 {
 		round--
 		each := stones[0]
 		stones = stones[1:]
-		if count, ok := stoneToCount[each]; ok {
-			totalCount += count
-			continue
+		if 0 < each.spots && each.spots < halfBlink {
+			if count, ok := stoneToCount[each]; ok {
+				totalCount += count
+				continue
+			}
 		}
+		cacheCount := -1
 		for range each.spots {
+			if 0 < each.spots && each.spots < halfBlink {
+				if count, ok := stoneToCount[each]; ok {
+					cacheCount = count
+					break
+				}
+			}
 			first, second, cloned := transform(each.value)
 			each.spots--
 			each.value = first
 			if cloned {
 				stones = append(stones, spottedStone{value: second, spots: each.spots})
 			}
+		}
+		if cacheCount >= 0 {
+			totalCount += cacheCount
+			continue
 		}
 		totalCount++
 		if round <= 0 {
