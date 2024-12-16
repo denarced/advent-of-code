@@ -167,6 +167,13 @@ func Max[T number](a, b T) T {
 	return b
 }
 
+func Min[T number](a, b T) T {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func ToIntTable(s []string) (table [][]int) {
 	for _, each := range s {
 		cells := strings.Fields(each)
@@ -231,8 +238,11 @@ func (v Loc) ToString() string {
 	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }
 
+func (v Loc) Delta(x, y int) Loc {
+	return Loc{X: v.X + x, Y: v.Y + y}
+}
+
 func ToInts(s []string) (nums []int, err error) {
-	Logger.Debug("Convert string slice to ints.", "length", len(s))
 	for _, each := range s {
 		var n int
 		n, err = strconv.Atoi(each)
@@ -295,7 +305,7 @@ func NewBoard(lines []string) *Board {
 // 0|
 // ..---
 // ..012
-type BoardIterCb func(loc Loc, c rune)
+type BoardIterCb func(loc Loc, c rune) bool
 
 func (v *Board) Iter(cb BoardIterCb) {
 	lineCount := len(v.lines)
@@ -303,7 +313,9 @@ func (v *Board) Iter(cb BoardIterCb) {
 		line := v.lines[Abs(y-lineCount+1)]
 		runes := []rune(line)
 		for x := 0; x < len(runes); x++ {
-			cb(Loc{X: x, Y: y}, runes[x])
+			if !cb(Loc{X: x, Y: y}, runes[x]) {
+				return
+			}
 		}
 	}
 }
@@ -338,4 +350,35 @@ func (v *Board) NextTo(loc Loc, c rune) []Loc {
 		}
 	}
 	return locs
+}
+
+func (v *Board) CountArea() int {
+	return (v.MaxX + 1) * (v.MaxY + 1)
+}
+
+func Pow(b, e int) int {
+	if e == 0 {
+		return 1
+	}
+	if e == 1 {
+		return b
+	}
+	res := b
+	for range e - 1 {
+		res *= b
+	}
+	return res
+}
+
+type Pair[T any] struct {
+	First  T
+	Second T
+}
+
+func NewPair[T any](first, second T) Pair[T] {
+	return Pair[T]{First: first, Second: second}
+}
+
+func (v Pair[T]) String() string {
+	return fmt.Sprintf("%v-%v", v.First, v.Second)
 }

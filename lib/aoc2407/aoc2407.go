@@ -113,19 +113,8 @@ func concat(a, b int) int {
 	return i
 }
 
-func pow(b, e int) int {
-	if e == 0 {
-		return 1
-	}
-	res := b
-	for range e - 1 {
-		res *= b
-	}
-	return res
-}
-
 func generateZeroPaddedNumericStrings(length, base int) []string {
-	max := pow(base, length)
+	max := shared.Pow(base, length)
 	strs := make([]string, 0, max)
 	for i := 0; i < max; i++ {
 		s := strconv.FormatInt(int64(i), base)

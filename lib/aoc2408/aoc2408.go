@@ -27,7 +27,7 @@ func deriveUniqueAntinodeLocations(
 	}
 	brd := shared.NewBoard(lines)
 	freqToAntennas := map[rune][]shared.Loc{}
-	brd.Iter(func(loc shared.Loc, c rune) {
+	brd.Iter(func(loc shared.Loc, c rune) bool {
 		if isAntenna(c) {
 			existing, ok := freqToAntennas[c]
 			if ok {
@@ -36,6 +36,7 @@ func deriveUniqueAntinodeLocations(
 				freqToAntennas[c] = []shared.Loc{loc}
 			}
 		}
+		return true
 	})
 	for freq, locations := range freqToAntennas {
 		shared.Logger.Info("Derive antinodes.", "frequency", string(freq), "count", len(locations))

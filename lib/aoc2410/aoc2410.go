@@ -29,11 +29,12 @@ func DeriveSumOfTrailheadScores(lines []string, ratings bool) int {
 	}()
 	var wg sync.WaitGroup
 	brd := shared.NewBoard(lines)
-	brd.Iter(func(loc shared.Loc, c rune) {
+	brd.Iter(func(loc shared.Loc, c rune) bool {
 		if c == '0' {
 			wg.Add(1)
 			go blaze(loc, loc, &wg, brd, ch)
 		}
+		return true
 	})
 	wg.Wait()
 	close(ch)

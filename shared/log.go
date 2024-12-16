@@ -47,7 +47,7 @@ func InitLogging() {
 
 // InitTestLogging creates an slog logger that writes to t.Log.
 func InitTestLogging(tb testing.TB) {
-	initLogger(&testWriter{tb: tb}, slog.LevelDebug)
+	initLogger(&testWriter{tb: tb}, slog.LevelInfo)
 }
 
 func initLogger(writer io.Writer, level slog.Level) {
