@@ -117,6 +117,10 @@ func (v *Set[T]) Add(item T) {
 	v.m[item] = 0
 }
 
+func (v *Set[T]) Remove(item T) {
+	delete(v.m, item)
+}
+
 func (v *Set[T]) Has(item T) bool {
 	_, ok := v.m[item]
 	return ok
@@ -238,8 +242,12 @@ func (v Loc) ToString() string {
 	return fmt.Sprintf("%dx%d", v.X, v.Y)
 }
 
-func (v Loc) Delta(x, y int) Loc {
-	return Loc{X: v.X + x, Y: v.Y + y}
+func (v Loc) Delta(delta Loc) Loc {
+	return Loc{X: v.X + delta.X, Y: v.Y + delta.Y}
+}
+
+func (v Loc) Rev() Loc {
+	return Loc{X: -v.X, Y: -v.Y}
 }
 
 func ToInts(s []string) (nums []int, err error) {
@@ -335,6 +343,25 @@ func (v *Board) Get(loc Loc) (c rune, ok bool) {
 	return
 }
 
+func (v *Board) Set(loc Loc, c rune) {
+	x := loc.X
+	if x < 0 || v.MaxX < x {
+		Logger.Error("Illegal location for X.", "loc", loc, "c", c)
+		panic("Illegal location for X.")
+	}
+	y := loc.Y
+	if y < 0 || v.MaxY < y {
+		Logger.Error("Illegal location for Y.", "loc", loc, "c", c)
+		panic("Illegal location for Y.")
+	}
+	lineIndex := Abs(y - len(v.lines) + 1)
+	line := v.lines[lineIndex]
+	runes := []rune(line)
+	runes[x] = c
+	line = string(runes)
+	v.lines[lineIndex] = line
+}
+
 func (v *Board) NextTo(loc Loc, c rune) []Loc {
 	locs := []Loc{}
 	for _, xd := range []int{-1, 0, 1} {
@@ -354,6 +381,10 @@ func (v *Board) NextTo(loc Loc, c rune) []Loc {
 
 func (v *Board) CountArea() int {
 	return (v.MaxX + 1) * (v.MaxY + 1)
+}
+
+func (v *Board) GetLines() []string {
+	return v.lines
 }
 
 func Pow(b, e int) int {

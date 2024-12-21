@@ -101,10 +101,10 @@ func crawl(brd *shared.Board, loc shared.Loc) []shared.Loc {
 
 func countNeighbours(area map[shared.Loc]int, loc shared.Loc) int {
 	count := 0
-	for _, each := range []shared.Loc{loc.Delta(1, 0),
-		loc.Delta(0, -1),
-		loc.Delta(-1, 0),
-		loc.Delta(0, 1)} {
+	for _, each := range []shared.Loc{loc.Delta(shared.Loc{X: 1, Y: 0}),
+		loc.Delta(shared.Loc{X: 0, Y: -1}),
+		loc.Delta(shared.Loc{X: -1, Y: 0}),
+		loc.Delta(shared.Loc{X: 0, Y: 1})} {
 		if _, exist := area[each]; exist {
 			count++
 		}
@@ -223,27 +223,6 @@ func clockwiseFence(f fence) fence {
 		return newFence(f.Second, f.First)
 	}
 	return f
-}
-
-func clockwiseFatFence(fattie fatFence) fatFence {
-	dx := fattie.f.Second.X - fattie.f.First.X
-	dy := fattie.f.Second.Y - fattie.f.First.Y
-	if dx == 0 {
-		if dy > 0 {
-			return fatFence{
-				f:   newFence(fattie.f.Second, fattie.f.First),
-				loc: fattie.loc,
-			}
-		}
-		return fattie
-	}
-	if dx > 0 {
-		return fatFence{
-			f:   newFence(fattie.f.Second, fattie.f.First),
-			loc: fattie.loc,
-		}
-	}
-	return fattie
 }
 
 func sortFences(unsorted []fatFence) [][]fatFence {
