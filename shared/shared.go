@@ -10,6 +10,17 @@ import (
 )
 
 var (
+	RealEast       = Direction{X: 1, Y: 0}
+	RealSouth      = Direction{X: 0, Y: -1}
+	RealWest       = Direction{X: -1, Y: 0}
+	RealNorth      = Direction{X: 0, Y: 1}
+	RealDirections = []Direction{
+		RealEast,
+		RealSouth,
+		RealWest,
+		RealNorth,
+	}
+
 	DirNorth   = Direction{X: 0, Y: -1}
 	DirEast    = Direction{X: 1, Y: 0}
 	DirSouth   = Direction{X: 0, Y: 1}
@@ -343,6 +354,14 @@ func (v *Board) Get(loc Loc) (c rune, ok bool) {
 	return
 }
 
+func (v *Board) GetOrDie(loc Loc) rune {
+	c, ok := v.Get(loc)
+	if !ok {
+		panic(fmt.Sprintf("Can't find %v.", loc))
+	}
+	return c
+}
+
 func (v *Board) Set(loc Loc, c rune) {
 	x := loc.X
 	if x < 0 || v.MaxX < x {
@@ -385,6 +404,21 @@ func (v *Board) CountArea() int {
 
 func (v *Board) GetLines() []string {
 	return v.lines
+}
+
+func (v *Board) FindOrDie(c rune) Loc {
+	var found *Loc
+	v.Iter(func(eachLoc Loc, eachC rune) bool {
+		if eachC == c {
+			found = &eachLoc
+			return false
+		}
+		return true
+	})
+	if found == nil {
+		panic(fmt.Sprintf("Can't find %s.", string(c)))
+	}
+	return *found
 }
 
 func Pow(b, e int) int {
