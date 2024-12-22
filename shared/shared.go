@@ -301,9 +301,10 @@ func StripPadding(lines []string) []string {
 }
 
 type Board struct {
-	lines []string
-	MaxX  int
-	MaxY  int
+	lines    []string
+	MaxX     int
+	MaxY     int
+	ReadOnly bool
 }
 
 func NewBoard(lines []string) *Board {
@@ -363,6 +364,9 @@ func (v *Board) GetOrDie(loc Loc) rune {
 }
 
 func (v *Board) Set(loc Loc, c rune) {
+	if v.ReadOnly {
+		panic("Board is read-only.")
+	}
 	x := loc.X
 	if x < 0 || v.MaxX < x {
 		Logger.Error("Illegal location for X.", "loc", loc, "c", c)

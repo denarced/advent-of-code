@@ -20,9 +20,11 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	fmt.Printf("Lowest score:\n")
 	alpha := time.Now()
-	fmt.Printf("    %d (%v)\n", aoc2416.CountLowestScore(lines, false), time.Since(alpha))
+	score, seatCount := aoc2416.CountLowestScore(lines, false)
+	fmt.Printf("Result (%v):\n", time.Since(alpha))
+	fmt.Printf("    Score:      %d\n", score)
+	fmt.Printf("    Seat count: %d\n", seatCount)
 
 	shared.Logger.Info("Done.")
 }

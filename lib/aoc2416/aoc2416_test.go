@@ -2,6 +2,7 @@ package aoc2416
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -9,10 +10,12 @@ import (
 )
 
 func TestCountLowestScore(t *testing.T) {
-	run := func(name string, lines []string, expected int) {
+	run := func(name string, lines []string, expectedScore int, expectedSeats int) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
-			require.Equal(t, expected, CountLowestScore(lines, false))
+			score, seats := CountLowestScore(lines, true)
+			require.Equal(t, expectedScore, score)
+			require.Equal(t, expectedSeats, seats)
 		})
 	}
 
@@ -25,7 +28,8 @@ func TestCountLowestScore(t *testing.T) {
 			"#E..#",
 			"#####",
 		},
-		2006)
+		2006,
+		7)
 	run(
 		"example",
 		[]string{
@@ -45,7 +49,8 @@ func TestCountLowestScore(t *testing.T) {
 			"#S..#.....#...#",
 			"###############",
 		},
-		7_036)
+		7_036,
+		45)
 	run(
 		"small branching",
 		[]string{
@@ -57,15 +62,17 @@ func TestCountLowestScore(t *testing.T) {
 			/* 0 */ "########",
 			//       01234567
 		},
-		3007)
+		3007,
+		12)
 }
 
 func TestGetPossibleVectors(t *testing.T) {
+	all := append([]shared.Direction{}, shared.RealDirections...)
 	possibleDirections := map[shared.Direction][]shared.Direction{
-		shared.RealEast:  getPossibleDirections(shared.RealEast),
-		shared.RealSouth: getPossibleDirections(shared.RealSouth),
-		shared.RealWest:  getPossibleDirections(shared.RealWest),
-		shared.RealNorth: getPossibleDirections(shared.RealNorth),
+		shared.RealEast:  getPossibleDirections(all, shared.RealEast),
+		shared.RealSouth: getPossibleDirections(all, shared.RealSouth),
+		shared.RealWest:  getPossibleDirections(all, shared.RealWest),
+		shared.RealNorth: getPossibleDirections(all, shared.RealNorth),
 	}
 	run := func(name string, lines []string, dir shared.Direction, expected []vector) {
 		t.Run(name, func(t *testing.T) {
@@ -111,7 +118,8 @@ func TestGetPossibleDirections(t *testing.T) {
 	run := func(dir shared.Direction, expected []shared.Direction) {
 		t.Run(fmt.Sprintf("%v", dir), func(t *testing.T) {
 			shared.InitTestLogging(t)
-			require.ElementsMatch(t, expected, getPossibleDirections(dir))
+			all := append([]shared.Direction{}, shared.RealDirections...)
+			require.ElementsMatch(t, expected, getPossibleDirections(all, dir))
 		})
 	}
 
@@ -132,4 +140,39 @@ func TestDerivePoints(t *testing.T) {
 
 	run(shared.RealNorth, shared.RealNorth, pointsStep)
 	run(shared.RealNorth, shared.RealEast, pointsTurn+pointsStep)
+}
+
+// "0x0 -> 1x1" to proper shared.Loc values.
+func parseLocPair(move string) (shared.Loc, shared.Loc) {
+	fields := strings.Fields(move)
+	from := shared.ParseLoc(fields[0])
+	to := shared.ParseLoc(fields[2])
+	return from, to
+}
+
+func TestSortDirections(t *testing.T) {
+	run := func(startToEnd string, expected []shared.Direction) {
+		start, end := parseLocPair(startToEnd)
+		t.Run(fmt.Sprintf("%s -> %s", start.ToString(), end.ToString()), func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+
+			// EXERCISE
+			actual := sortDirections(start, end)
+
+			// VERIFY
+			req.Equal(4, len(actual))
+			preferred := actual[:len(expected)]
+			req.ElementsMatch(expected, preferred)
+		})
+	}
+
+	run("0x0 -> 1x0", []shared.Direction{shared.RealEast})
+	run("0x0 -> 1x-1", []shared.Direction{shared.RealEast, shared.RealSouth})
+	run("0x0 -> 0x-1", []shared.Direction{shared.RealSouth})
+	run("0x0 -> -1x-1", []shared.Direction{shared.RealSouth, shared.RealWest})
+	run("0x0 -> -1x0", []shared.Direction{shared.RealWest})
+	run("0x0 -> -1x1", []shared.Direction{shared.RealNorth, shared.RealWest})
+	run("0x0 -> 0x1", []shared.Direction{shared.RealNorth})
+	run("0x0 -> 1x1", []shared.Direction{shared.RealNorth, shared.RealEast})
 }
