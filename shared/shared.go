@@ -451,3 +451,9 @@ func NewPair[T any](first, second T) Pair[T] {
 func (v Pair[T]) String() string {
 	return fmt.Sprintf("%v-%v", v.First, v.Second)
 }
+
+func ParseIntOrDie(s string) int {
+	i, err := strconv.Atoi(s)
+	Die(err, s)
+	return i
+}
