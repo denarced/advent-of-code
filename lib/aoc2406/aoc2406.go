@@ -12,81 +12,75 @@ type vector struct {
 	dir shared.Direction
 }
 
-type board struct {
-	curr    vector
-	blocks  *shared.Set[shared.Loc]
-	visited *shared.Set[vector]
-	stepped *shared.Set[shared.Loc]
-	width   int
-	height  int
+type fatBoard struct {
+	curr      vector
+	visited   *shared.Set[vector]
+	stepped   *shared.Set[shared.Loc]
+	nestedBrd *shared.Board
 }
 
-func newBoard(init shared.Loc, blocks []shared.Loc, width, height int) *board {
-	curr := vector{loc: init, dir: shared.DirNorth}
-	return &board{
-		curr:    curr,
-		blocks:  shared.NewSet(blocks),
-		visited: shared.NewSet([]vector{curr}),
-		stepped: shared.NewSet([]shared.Loc{curr.loc}),
-		width:   width,
-		height:  height,
+func newFatBoard(
+	init shared.Loc,
+	nestedBrd *shared.Board,
+) *fatBoard {
+	curr := vector{loc: init, dir: shared.RealNorth}
+	return &fatBoard{
+		curr:      curr,
+		visited:   shared.NewSet([]vector{curr}),
+		stepped:   shared.NewSet([]shared.Loc{curr.loc}),
+		nestedBrd: nestedBrd,
 	}
 }
 
-func (v *board) deriveNextLocation() shared.Loc {
+func (v *fatBoard) deriveNextLocation() shared.Loc {
 	return shared.Loc{
-		X: v.curr.loc.X + v.curr.dir.Y,
-		Y: v.curr.loc.Y + v.curr.dir.X,
+		X: v.curr.loc.X + v.curr.dir.X,
+		Y: v.curr.loc.Y + v.curr.dir.Y,
 	}
 }
 
-func (v *board) deriveNextVector() vector {
+func (v *fatBoard) deriveNextVector() vector {
 	return vector{
 		dir: v.curr.dir,
 		loc: shared.Loc{
-			X: v.curr.loc.X + v.curr.dir.Y,
-			Y: v.curr.loc.Y + v.curr.dir.X,
+			X: v.curr.loc.X + v.curr.dir.X,
+			Y: v.curr.loc.Y + v.curr.dir.Y,
 		},
 	}
 }
 
-func (v *board) isInside(l shared.Loc) bool {
-	if l.X < 0 || l.Y < 0 {
-		return false
-	}
-	if l.X >= v.height {
-		return false
-	}
-	return l.Y < v.width
+func (v *fatBoard) isInside(l shared.Loc) bool {
+	_, ok := v.nestedBrd.Get(l)
+	return ok
 }
 
-func (v *board) turn() {
+func (v *fatBoard) turn() {
 	v.visited.Add(v.curr)
 	v.stepped.Add(v.curr.loc)
-	v.curr.dir = v.curr.dir.TurnRight()
+	v.curr.dir = v.curr.dir.TurnRealRight()
 }
 
-func (v *board) isBlock(l shared.Loc) bool {
-	return v.blocks.Has(l)
+func (v *fatBoard) isBlock(l shared.Loc) bool {
+	return v.nestedBrd.GetOrDie(l) == '#'
 }
 
-func (v *board) move(l shared.Loc) {
+func (v *fatBoard) move(l shared.Loc) {
 	v.curr.loc = l
 	v.visited.Add(v.curr)
 	v.stepped.Add(l)
 }
 
-func (v *board) findIndefiniteBlock() bool {
+func (v *fatBoard) findIndefiniteBlock() bool {
 	w := v.copy()
 	possible := w.deriveNextLocation()
 	// Can't place a block on path already travelled, it would invalidate the past.
-	if v.stepped.Has(possible) {
+	if !v.isInside(possible) || v.stepped.Has(possible) {
 		return false
 	}
-	w.blocks.Add(possible)
+	w.nestedBrd.Set(possible, '#')
 	shared.Logger.Debug("Find-indef.", "curr", w.curr)
 	turnCount := 0
-	for i := 0; i < 100*shared.Max(v.width, v.height); i++ {
+	for i := 0; i < 100*shared.Max(v.nestedBrd.MaxX+1, v.nestedBrd.MaxY+1); i++ {
 		if w.visited.Has(w.deriveNextVector()) {
 			shared.Logger.Info("Found block that causes indefinite loop.", "block", possible)
 			return true
@@ -110,30 +104,20 @@ func (v *board) findIndefiniteBlock() bool {
 	panic("indef loop")
 }
 
-func (v *board) copy() *board {
-	return &board{
-		curr:    v.curr,
-		blocks:  v.blocks.Copy(),
-		visited: v.visited.Copy(),
-		stepped: v.stepped.Copy(),
-		width:   v.width,
-		height:  v.height,
+func (v *fatBoard) copy() *fatBoard {
+	return &fatBoard{
+		curr:      v.curr,
+		visited:   v.visited.Copy(),
+		stepped:   v.stepped.Copy(),
+		nestedBrd: v.nestedBrd.Copy(),
 	}
 }
 
-func (v *board) deriveVisitedCount() int {
+func (v *fatBoard) deriveVisitedCount() int {
 	return v.stepped.Count()
 }
 
-func (v *board) print() string {
-	lines := []string{}
-	for range v.height {
-		lines = append(lines, strings.Repeat(" ", v.width))
-	}
-	v.blocks.Iter(func(item shared.Loc) bool {
-		setCharacter(lines, item, "#")
-		return true
-	})
+func (v *fatBoard) print() string {
 	locToDirs := map[shared.Loc][]shared.Direction{}
 	v.visited.Iter(func(v vector) bool {
 		l := v.loc
@@ -145,10 +129,10 @@ func (v *board) print() string {
 		return true
 	})
 	for loc, dirs := range locToDirs {
-		setCharacter(lines, loc, deriveDirCharacter(dirs))
+		v.nestedBrd.Set(loc, deriveDirCharacter(dirs))
 	}
-	setCharacter(lines, v.curr.loc, "*")
-	return strings.Join(lines, "\n") + "\n"
+	v.nestedBrd.Set(v.curr.loc, '*')
+	return strings.Join(v.nestedBrd.GetLines(), "\n") + "\n"
 }
 
 func CountDistinctPositions(lines []string) int {
@@ -156,34 +140,31 @@ func CountDistinctPositions(lines []string) int {
 		return 0
 	}
 	shared.Logger.Info("Count distinct positions.", "line count", len(lines))
-	brd := newBoard(
-		findCharacter(lines, '^'),
-		findLocations(lines, '#'),
-		len(lines[0]),
-		len(lines))
+	brd := shared.NewBoard(lines)
+	fatBrd := newFatBoard(brd.FindOrDie('^'), brd)
 	counter := 7_000
 	for {
-		next := brd.deriveNextLocation()
-		if !brd.isInside(next) {
+		next := fatBrd.deriveNextLocation()
+		if !fatBrd.isInside(next) {
 			break
 		}
-		if brd.isBlock(next) {
-			brd.turn()
+		if fatBrd.isBlock(next) {
+			fatBrd.turn()
 			continue
 		}
-		shared.Logger.Debug("Step.", "previous", brd.curr, "next", next)
+		shared.Logger.Debug("Step.", "previous", fatBrd.curr, "next", next)
 		shared.Logger.Debug(
 			"Move.",
 			"step",
-			fmt.Sprintf("%s -> %s", brd.curr.loc.ToString(), next.ToString()),
+			fmt.Sprintf("%s -> %s", fatBrd.curr.loc.ToString(), next.ToString()),
 		)
-		brd.move(next)
+		fatBrd.move(next)
 		counter--
 		if counter < 0 {
 			panic("This loop is clearly eternal.")
 		}
 	}
-	return brd.deriveVisitedCount()
+	return fatBrd.deriveVisitedCount()
 }
 
 func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
@@ -191,11 +172,8 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 		return shared.NewSet([]shared.Loc{})
 	}
 	shared.Logger.Info("Derive infinite loop locations.")
-	brd := newBoard(
-		findCharacter(lines, '^'),
-		findLocations(lines, '#'),
-		len(lines[0]),
-		len(lines))
+	nested := shared.NewBoard(lines)
+	brd := newFatBoard(nested.FindOrDie('^'), nested)
 	indefLocations := shared.NewSet([]shared.Loc{})
 	for {
 		shared.Logger.Debug("Now.", "location", brd.curr)
@@ -219,39 +197,7 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 	return indefLocations
 }
 
-func findLocations(lines []string, c byte) []shared.Loc {
-	locs := []shared.Loc{}
-	for r := 0; r < len(lines); r++ {
-		for l := 0; l < len(lines[r]); l++ {
-			if lines[r][l] == c {
-				locs = append(locs, shared.Loc{X: r, Y: l})
-			}
-		}
-	}
-	return locs
-}
-
-func findCharacter(lines []string, char byte) shared.Loc {
-	for r := 0; r < len(lines); r++ {
-		for c := 0; c < len(lines[r]); c++ {
-			if lines[r][c] == char {
-				return shared.Loc{X: r, Y: c}
-			}
-		}
-	}
-	return shared.Loc{X: -1, Y: -1}
-}
-
-func setCharacter(lines []string, loc shared.Loc, char string) {
-	if char == "" || len(char) > 1 {
-		panic(fmt.Sprintf("Invalid character length(%d): \"%s\".", len(char), char))
-	}
-	line := lines[loc.X]
-	line = line[0:loc.Y] + char + line[loc.Y+1:]
-	lines[loc.X] = line
-}
-
-func deriveDirCharacter(dirs []shared.Direction) string {
+func deriveDirCharacter(dirs []shared.Direction) rune {
 	hor, ver := false, false
 	shared.NewSet(dirs).Iter(func(d shared.Direction) bool {
 		if d.X == 0 && d.Y != 0 {
@@ -264,13 +210,13 @@ func deriveDirCharacter(dirs []shared.Direction) string {
 		return true
 	})
 	if hor && !ver {
-		return "-"
+		return '-'
 	}
 	if !hor && ver {
-		return "|"
+		return '|'
 	}
 	if hor && ver {
-		return "+"
+		return '+'
 	}
 	panic(
 		fmt.Sprintf(

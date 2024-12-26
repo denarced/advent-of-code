@@ -18,18 +18,8 @@ func CountInTable(table []string, word string) int {
 }
 
 func countWordsAt(table []string, word string, row, col int) int {
-	directions := []shared.Direction{
-		{X: 1, Y: 0},
-		{X: 1, Y: -1},
-		{X: 0, Y: -1},
-		{X: -1, Y: -1},
-		{X: -1, Y: 0},
-		{X: -1, Y: 1},
-		{X: 0, Y: 1},
-		{X: 1, Y: 1},
-	}
 	count := 0
-	for _, each := range directions {
+	for _, each := range shared.Directions {
 		if readTableAt(table, row, col, len(word), each) == word {
 			count++
 		}
@@ -65,10 +55,7 @@ func findWordLocations(table []string, word string) []shared.Loc {
 	mid := len(word) / 2
 	for r := 0; r < len(table); r++ {
 		for c := 0; c < len(table[r]); c++ {
-			for _, each := range shared.Directions {
-				if each.X == 0 || each.Y == 0 {
-					continue
-				}
+			for _, each := range shared.RealMiddleDirections {
 				if readTableAt(table, r, c, len(word), each) == word {
 					x := r + each.X*mid
 					y := c + each.Y*mid

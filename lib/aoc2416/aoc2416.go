@@ -260,7 +260,7 @@ func draw(lines []string, steps []shared.Loc) {
 func sortDirections(start, end shared.Loc) []shared.Direction {
 	x := toZeroOrOne(end.X, start.X)
 	y := toZeroOrOne(end.Y, start.Y)
-	all := append([]shared.Direction{}, shared.RealDirections...)
+	all := append([]shared.Direction{}, shared.RealPrimaryDirections...)
 	slices.SortFunc(all, func(a, b shared.Direction) int {
 		grade := func(dir shared.Direction) int {
 			points := 0

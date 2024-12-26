@@ -45,16 +45,16 @@ func TestCountDistinctPositions(t *testing.T) {
 func advent06Lines() []string {
 	padded := []string{
 		//        0 1 2 3 4 5 6 7 8 9
-		/* 0 */ " . . . . # . . . . .",
-		/* 1 */ " . . . . . . . . . #",
-		/* 2 */ " . . . . . . . . . .",
-		/* 3 */ " . . # . . . . . . .",
-		/* 4 */ " . . . . . . . # . .",
-		/* 5 */ " . . . . . . . . . .",
-		/* 6 */ " . # . o ^ . . . . .",
-		/* 7 */ " . . . . . . o o # .",
-		/* 8 */ " # o . o . . . . . .",
-		/* 9 */ " . . . . . . # o . .",
+		/* 9 */ " . . . . # . . . . .",
+		/* 8 */ " . . . . . . . . . #",
+		/* 7 */ " . . . . . . . . . .",
+		/* 6 */ " . . # . . . . . . .",
+		/* 5 */ " . . . . . . . # . .",
+		/* 4 */ " . . . . . . . . . .",
+		/* 3 */ " . # . o ^ . . . . .",
+		/* 2 */ " . . . . . . o o # .",
+		/* 1 */ " # o . o . . . . . .",
+		/* 0 */ " . . . . . . # o . .",
 	}
 	return shared.StripPadding(padded)
 }
@@ -99,10 +99,11 @@ func straight06Lines() []string {
 
 func extractExpected(lines []string) *shared.Set[shared.Loc] {
 	locations := []shared.Loc{}
-	for r := 0; r < len(lines); r++ {
-		for c := 0; c < len(lines[r]); c++ {
-			if lines[r][c] == 'o' {
-				locations = append(locations, shared.Loc{X: r, Y: c})
+	for y := 0; y < len(lines); y++ {
+		for x := 0; x < len(lines[y]); x++ {
+			r := shared.Abs(y - len(lines) + 1)
+			if lines[r][x] == 'o' {
+				locations = append(locations, shared.Loc{X: x, Y: y})
 			}
 		}
 	}
@@ -208,20 +209,25 @@ func TestBoardCopy(t *testing.T) {
 	shared.InitTestLogging(t)
 
 	// EXERCISE
-	orig := newBoard(shared.Loc{}, []shared.Loc{}, 10, 11)
+	lines := []string{
+		".#..",
+		"..#.",
+		".^..",
+	}
+	orig := newFatBoard(shared.Loc{}, shared.NewBoard(lines))
 	copied := orig.copy()
 	copied.move(copied.deriveNextLocation()) // Curr.loc and visited modified.
-	copied.blocks.Add(shared.Loc{X: 6, Y: 7})
-	copied.width = 20
-	copied.height = 21
+	blockLoc := shared.Loc{X: 0, Y: 1}
+	copied.nestedBrd.Set(blockLoc, '#')
 
 	req := require.New(t)
 	// VERIFY
-	req.Equal(vector{dir: shared.DirNorth}, orig.curr, "curr")
-	req.Equal(shared.NewSet([]shared.Loc{}), orig.blocks, "blocks")
-	req.Equal(shared.NewSet([]vector{{dir: shared.DirNorth}}), orig.visited, "visited")
-	req.Equal(10, orig.width, "width")
-	req.Equal(11, orig.height, "height")
+	req.Equal(vector{dir: shared.RealNorth}, orig.curr, "curr")
+	req.Equal('.', orig.nestedBrd.GetOrDie(blockLoc), "changed block")
+	req.Equal(
+		shared.NewSet([]vector{{dir: shared.RealNorth}}),
+		orig.visited,
+		"visited")
 }
 
 func spiral06Lines() []string {
@@ -305,7 +311,7 @@ func precursor06Lines() []string {
 }
 
 func TestBoardPrint(t *testing.T) {
-	run := func(name string, brd *board, expected string) {
+	run := func(name string, brd *fatBoard, expected string) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
@@ -316,7 +322,14 @@ func TestBoardPrint(t *testing.T) {
 
 	run(
 		"start",
-		newTestBoard(shared.Loc{X: 1, Y: 1}, []shared.Loc{{X: 0, Y: 1}}, nil, 3, 2),
+		newTestBoard(
+			shared.Loc{X: 1, Y: 0},
+			nil,
+			[]string{
+				" # ",
+				"   ",
+			},
+		),
 		strings.Join(
 			[]string{
 				" # ",
@@ -326,37 +339,39 @@ func TestBoardPrint(t *testing.T) {
 	run(
 		"n",
 		newTestBoard(
-			shared.Loc{X: 2, Y: 2},
-			[]shared.Loc{{X: 0, Y: 1}, {X: 1, Y: 3}},
+			shared.Loc{X: 2, Y: 0},
 			[]vector{
-				{loc: shared.Loc{X: 2, Y: 1}, dir: shared.DirNorth},
-				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.DirNorth},
-				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.DirEast},
-				{loc: shared.Loc{X: 1, Y: 2}, dir: shared.DirEast},
-				{loc: shared.Loc{X: 1, Y: 2}, dir: shared.DirSouth},
-				{loc: shared.Loc{X: 2, Y: 2}, dir: shared.DirSouth},
+				{loc: shared.Loc{X: 1, Y: 0}, dir: shared.RealNorth},
+				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.RealNorth},
+				{loc: shared.Loc{X: 1, Y: 1}, dir: shared.RealEast},
+				{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealEast},
+				{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealSouth},
+				{loc: shared.Loc{X: 2, Y: 0}, dir: shared.RealSouth},
 			},
-			4,
-			3),
+			[]string{
+				" #  ",
+				"   #",
+				"    ",
+			},
+		),
 		strings.Join(
 			[]string{
 				//       0123
-				/* 0 */ " #  ",
+				/* 2 */ " #  ",
 				/* 1 */ " ++#",
-				/* 2 */ " |* ",
+				/* 0 */ " |* ",
 			},
 			"\n")+"\n")
 }
 
 func newTestBoard(
 	curr shared.Loc,
-	blocks []shared.Loc,
 	visited []vector,
-	w, h int,
-) *board {
-	brd := newBoard(curr, blocks, w, h)
+	lines []string,
+) *fatBoard {
+	fatBoard := newFatBoard(curr, shared.NewBoard(lines))
 	if visited != nil {
-		brd.visited = shared.NewSet(visited)
+		fatBoard.visited = shared.NewSet(visited)
 	}
-	return brd
+	return fatBoard
 }

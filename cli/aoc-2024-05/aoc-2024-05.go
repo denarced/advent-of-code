@@ -19,8 +19,9 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	fmt.Println("Correct middle page number sum:", aoc2405.SumCorrectMiddlePageNumbers(lines))
-	fmt.Println("Incorrect middle page number sum:", aoc2405.SumIncorrectMiddlePageNumbers(lines))
+	fmt.Println("Middle page number sum:")
+	fmt.Printf("    Correct:   %d\n", aoc2405.SumCorrectMiddlePageNumbers(lines))
+	fmt.Printf("    Incorrect: %d\n", aoc2405.SumIncorrectMiddlePageNumbers(lines))
 
 	shared.Logger.Info("Done.")
 }

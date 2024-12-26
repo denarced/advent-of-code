@@ -17,7 +17,7 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 	table := shared.ToIntTable(lines)
-	fmt.Println("Safe count without dampener:", aoc2402.CountSafe(table, false))
-	fmt.Println("Safe count with dampener:", aoc2402.CountSafe(table, true))
+	fmt.Printf("Safe count without dampener: %d\n", aoc2402.CountSafe(table, false))
+	fmt.Printf("Safe count with dampener:    %d\n", aoc2402.CountSafe(table, true))
 	shared.Logger.Info("Done.")
 }

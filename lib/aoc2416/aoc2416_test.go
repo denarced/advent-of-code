@@ -67,7 +67,7 @@ func TestCountLowestScore(t *testing.T) {
 }
 
 func TestGetPossibleVectors(t *testing.T) {
-	all := append([]shared.Direction{}, shared.RealDirections...)
+	all := append([]shared.Direction{}, shared.RealPrimaryDirections...)
 	possibleDirections := map[shared.Direction][]shared.Direction{
 		shared.RealEast:  getPossibleDirections(all, shared.RealEast),
 		shared.RealSouth: getPossibleDirections(all, shared.RealSouth),
@@ -118,7 +118,7 @@ func TestGetPossibleDirections(t *testing.T) {
 	run := func(dir shared.Direction, expected []shared.Direction) {
 		t.Run(fmt.Sprintf("%v", dir), func(t *testing.T) {
 			shared.InitTestLogging(t)
-			all := append([]shared.Direction{}, shared.RealDirections...)
+			all := append([]shared.Direction{}, shared.RealPrimaryDirections...)
 			require.ElementsMatch(t, expected, getPossibleDirections(all, dir))
 		})
 	}

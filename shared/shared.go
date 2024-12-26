@@ -10,15 +10,25 @@ import (
 )
 
 var (
-	RealEast       = Direction{X: 1, Y: 0}
-	RealSouth      = Direction{X: 0, Y: -1}
-	RealWest       = Direction{X: -1, Y: 0}
-	RealNorth      = Direction{X: 0, Y: 1}
-	RealDirections = []Direction{
+	RealEast              = Direction{X: 1, Y: 0}
+	RealSouth             = Direction{X: 0, Y: -1}
+	RealWest              = Direction{X: -1, Y: 0}
+	RealNorth             = Direction{X: 0, Y: 1}
+	RealPrimaryDirections = []Direction{
 		RealEast,
 		RealSouth,
 		RealWest,
 		RealNorth,
+	}
+	RealSouthEast        = Direction{X: 1, Y: -1}
+	RealSouthWest        = Direction{X: -1, Y: -1}
+	RealNorthWest        = Direction{X: -1, Y: 1}
+	RealNorthEast        = Direction{X: 1, Y: 1}
+	RealMiddleDirections = []Direction{
+		RealSouthEast,
+		RealSouthWest,
+		RealNorthWest,
+		RealNorthEast,
 	}
 
 	DirNorth   = Direction{X: 0, Y: -1}
@@ -229,6 +239,21 @@ func (v Direction) TurnRight() Direction {
 	panic("no direction")
 }
 
+func (v Direction) TurnRealRight() Direction {
+	switch v {
+	case RealEast:
+		return RealSouth
+	case RealSouth:
+		return RealWest
+	case RealWest:
+		return RealNorth
+	case RealNorth:
+		return RealEast
+	default:
+		panic("no direction")
+	}
+}
+
 type Loc struct {
 	X int
 	Y int
@@ -423,6 +448,10 @@ func (v *Board) FindOrDie(c rune) Loc {
 		panic(fmt.Sprintf("Can't find %s.", string(c)))
 	}
 	return *found
+}
+
+func (v *Board) Copy() *Board {
+	return NewBoard(append([]string{}, v.lines...))
 }
 
 func Pow(b, e int) int {

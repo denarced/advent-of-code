@@ -19,8 +19,8 @@ func main() {
 	lines, err := shared.ReadLines(file)
 	shared.Die(err, "ReadLines")
 
-	fmt.Println("XMAS count:", aoc2404.CountInTable(lines, "XMAS"))
-	fmt.Println("MAX-MAX count:", aoc2404.CountWordCrosses(lines, "MAS"))
+	fmt.Printf("XMAS count:    %d\n", aoc2404.CountInTable(lines, "XMAS"))
+	fmt.Printf("MAX-MAX count: %d\n", aoc2404.CountWordCrosses(lines, "MAS"))
 
 	shared.Logger.Info("Done.")
 }

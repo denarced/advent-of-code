@@ -27,7 +27,7 @@ func main() {
 	right, err := shared.ToInts(rightStrs)
 	shared.Die(err, "ToInts(rightStrs)")
 
-	fmt.Println("Distance:", aoc2401.Distance(left, right))
-	fmt.Println("Similarity:", aoc2401.Similarity(left, right))
+	fmt.Printf("Distance:   %d\n", aoc2401.Distance(left, right))
+	fmt.Printf("Similarity: %d\n", aoc2401.Similarity(left, right))
 	shared.Logger.Info("Done.")
 }

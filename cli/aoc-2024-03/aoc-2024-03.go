@@ -16,7 +16,7 @@ func main() {
 	defer file.Close()
 	text, err := shared.ReadAll(file)
 	shared.Die(err, "ReadLines")
-	fmt.Println("Without do/don't:", aoc2403.Multiply(text, false))
-	fmt.Println("With do/don't:", aoc2403.Multiply(text, true))
+	fmt.Printf("Without do/don't: %d\n", aoc2403.Multiply(text, false))
+	fmt.Printf("With do/don't:    %d\n", aoc2403.Multiply(text, true))
 	shared.Logger.Info("Done.")
 }
