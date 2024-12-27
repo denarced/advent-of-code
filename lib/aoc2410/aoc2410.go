@@ -59,13 +59,9 @@ func blaze(startLoc, currLoc shared.Loc, wg *sync.WaitGroup, brd *shared.Board, 
 		ch <- t
 		return
 	}
-	near := brd.NextTo(currLoc, increment(current))
+	near := brd.NextTo(currLoc, current+1)
 	for _, each := range near {
 		wg.Add(1)
 		go blaze(startLoc, each, wg, brd, ch)
 	}
-}
-
-func increment(c rune) rune {
-	return c + 1
 }

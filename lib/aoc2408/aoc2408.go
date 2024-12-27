@@ -17,27 +17,13 @@ func CountUniqueAntinodeLocations(lines []string, resonantHarmonics bool) int {
 	return deriveUniqueAntinodeLocations(lines, resonantHarmonics).Count()
 }
 
-func deriveUniqueAntinodeLocations(
-	lines []string,
-	resonantHarmonics bool,
-) *shared.Set[shared.Loc] {
+func deriveUniqueAntinodeLocations(lines []string, resonantHarmonics bool) *shared.Set[shared.Loc] {
 	antinodes := shared.NewSet([]shared.Loc{})
 	if len(lines) == 0 {
 		return antinodes
 	}
 	brd := shared.NewBoard(lines)
-	freqToAntennas := map[rune][]shared.Loc{}
-	brd.Iter(func(loc shared.Loc, c rune) bool {
-		if isAntenna(c) {
-			existing, ok := freqToAntennas[c]
-			if ok {
-				freqToAntennas[c] = append(existing, loc)
-			} else {
-				freqToAntennas[c] = []shared.Loc{loc}
-			}
-		}
-		return true
-	})
+	freqToAntennas := mapAntennas(brd)
 	for freq, locations := range freqToAntennas {
 		shared.Logger.Info("Derive antinodes.", "frequency", string(freq), "count", len(locations))
 		shared.Logger.Debug("Derive antinodes.", "requency", string(freq), "antennas", locations)
@@ -55,6 +41,22 @@ func deriveUniqueAntinodeLocations(
 	shared.Logger.Debug("Antinodes.", "antinodes", antinodes)
 	shared.Logger.Info("Antinodes counted.", "count", antinodes.Count())
 	return antinodes
+}
+
+func mapAntennas(brd *shared.Board) map[rune][]shared.Loc {
+	freqToAntennas := map[rune][]shared.Loc{}
+	brd.Iter(func(loc shared.Loc, c rune) bool {
+		if isAntenna(c) {
+			existing, ok := freqToAntennas[c]
+			if ok {
+				freqToAntennas[c] = append(existing, loc)
+			} else {
+				freqToAntennas[c] = []shared.Loc{loc}
+			}
+		}
+		return true
+	})
+	return freqToAntennas
 }
 
 func isAntenna(c rune) bool {

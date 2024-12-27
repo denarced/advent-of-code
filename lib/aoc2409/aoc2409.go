@@ -126,53 +126,8 @@ func CountDefragmentedChecksum(s string) int {
 	if len(s) < 3 {
 		return 0
 	}
-	ints, err := shared.ToInts(strings.Split(s, ""))
-	shared.Die(err, "CountDefragmentedChecksum -> ToInts")
-	org := []atom{}
-	for i, each := range ints {
-		id := 0
-		file := i%2 == 0
-		if file {
-			id = i / 2
-		}
-		org = append(org, atom{width: each, id: id, file: file})
-	}
 	shared.Logger.Info("Defrag.")
-	j := len(org) - 1
-	if !org[j].file {
-		j--
-	}
-	for ; j > 1; j-- {
-		toMove := org[j]
-		if !toMove.file {
-			shared.Logger.Debug("Skip space.")
-			continue
-		}
-		if toMove.width <= 0 || !toMove.file {
-			shared.Logger.Debug("Skip empty file.")
-			continue
-		}
-		for i := 1; i < j; i++ {
-			slot := org[i]
-			if slot.file {
-				continue
-			}
-			leftOverCount := slot.width - toMove.width
-			if leftOverCount < 0 {
-				continue
-			}
-
-			shared.Logger.Debug("Moved file found.", "i", i, "moved", toMove, "slot", slot)
-			org[i] = toMove
-			org[j] = atom{id: 0, width: toMove.width, file: false}
-			if leftOverCount > 0 {
-				leftOver := atom{width: leftOverCount, id: 0, file: false}
-				org = slipIn(org, leftOver, i+1)
-				j++
-			}
-			break
-		}
-	}
+	org := defrag(toAtoms(s))
 
 	pos := 0
 	checksum := 0
@@ -216,4 +171,57 @@ func visualize(org []atom) string {
 		}
 	}
 	return v
+}
+
+func toAtoms(s string) []atom {
+	ints := shared.OrPanic2(shared.ToInts(strings.Split(s, "")))("to ints")
+	org := []atom{}
+	for i, each := range ints {
+		id := 0
+		file := i%2 == 0
+		if file {
+			id = i / 2
+		}
+		org = append(org, atom{width: each, id: id, file: file})
+	}
+	return org
+}
+
+func defrag(org []atom) []atom {
+	j := len(org) - 1
+	if !org[j].file {
+		j--
+	}
+	for ; j > 1; j-- {
+		toMove := org[j]
+		if !toMove.file {
+			shared.Logger.Debug("Skip space.")
+			continue
+		}
+		if toMove.width <= 0 {
+			shared.Logger.Debug("Skip empty file.")
+			continue
+		}
+		for i := 1; i < j; i++ {
+			slot := org[i]
+			if slot.file {
+				continue
+			}
+			leftOverCount := slot.width - toMove.width
+			if leftOverCount < 0 {
+				continue
+			}
+
+			shared.Logger.Debug("Moved file found.", "i", i, "moved", toMove, "slot", slot)
+			org[i] = toMove
+			org[j] = atom{id: 0, width: toMove.width, file: false}
+			if leftOverCount > 0 {
+				leftOver := atom{width: leftOverCount, id: 0, file: false}
+				org = slipIn(org, leftOver, i+1)
+				j++
+			}
+			break
+		}
+	}
+	return org
 }
