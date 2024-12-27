@@ -29,48 +29,43 @@ func CountStones(blinkCount int, stoneValues []int) int {
 	round := cycle
 	totalCount := 0
 	halfBlink := blinkCount / 2
+	getCachedCount := func(each *spottedStone) int {
+		if 0 < each.spots && each.spots < halfBlink {
+			if count, ok := stoneToCount[*each]; ok {
+				return count
+			}
+		}
+		return 0
+	}
+mainLoop:
 	for len(stones) > 0 {
 		round--
 		each := stones[0]
 		stones = stones[1:]
-		if 0 < each.spots && each.spots < halfBlink {
-			if count, ok := stoneToCount[each]; ok {
-				totalCount += count
-				continue
-			}
+		if cachedCount := getCachedCount(&each); cachedCount > 0 {
+			totalCount += cachedCount
+			continue
 		}
-		cacheCount := -1
 		for range each.spots {
-			if 0 < each.spots && each.spots < halfBlink {
-				if count, ok := stoneToCount[each]; ok {
-					cacheCount = count
-					break
-				}
+			if cachedCount := getCachedCount(&each); cachedCount > 0 {
+				totalCount += cachedCount
+				continue mainLoop
 			}
+
 			first, second, cloned := transform(each.value)
 			each.spots--
 			each.value = first
 			if cloned {
-				stones = append(stones, spottedStone{value: second, spots: each.spots})
+				// Prepend so newer stones with less steps are processed first. That way memory
+				// usage is reduced significantly because we remove stones quicker from "stones"
+				// slice.
+				stones = slices.Insert(stones, 0, spottedStone{value: second, spots: each.spots})
 			}
-		}
-		if cacheCount >= 0 {
-			totalCount += cacheCount
-			continue
 		}
 		totalCount++
 		if round <= 0 {
 			round = cycle
 			shared.Logger.Info("Sort.", "total count", totalCount, "stone count", len(stones))
-			slices.SortFunc(stones, func(a, b spottedStone) int {
-				if a.spots < b.spots {
-					return -1
-				}
-				if b.spots < a.spots {
-					return 1
-				}
-				return 0
-			})
 		}
 	}
 	return totalCount

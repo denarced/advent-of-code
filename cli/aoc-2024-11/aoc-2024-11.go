@@ -14,15 +14,10 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-11.txt")
-	shared.Die(err, "open file")
+	file := shared.OrPanic2(os.Open("data/2024-11.txt"))("open file")
 	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
-
-	stones, err := shared.ToInts(strings.Fields(lines[0]))
-	shared.Die(err, "ToInts")
+	lines := shared.OrPanic2(shared.ReadLines(file))("ReadLines")
+	stones := shared.OrPanic2(shared.ToInts(strings.Fields(lines[0])))("ToInts")
 	fmt.Println("Stone count:")
 	for _, each := range []int{25, 75} {
 		alpha := time.Now()
