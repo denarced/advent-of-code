@@ -86,15 +86,9 @@ func (v *stoneCache) size() int {
 }
 
 func CountStones(values []int, blinks int) int {
-	cacheCh := make(chan spottedValue)
 	cache := &stoneCache{
 		m: map[spottedStone]int{},
 	}
-	go func() {
-		for each := range cacheCh {
-			cache.set(each.stone, each.value)
-		}
-	}()
 
 	resultCh := make(chan int)
 	totalCh := make(chan int)
@@ -109,10 +103,9 @@ func CountStones(values []int, blinks int) int {
 	var wg sync.WaitGroup
 	for _, each := range values {
 		wg.Add(1)
-		go walkIntoStone(each, blinks, cache, cacheCh, resultCh, &wg)
+		go walkIntoStone(each, blinks, cache, resultCh, &wg)
 	}
 	wg.Wait()
-	close(cacheCh)
 	close(resultCh)
 	count := <-totalCh
 	shared.Logger.Info("Stones counted.", "count", count, "cache size", cache.size())
@@ -123,7 +116,6 @@ func walkIntoStone(
 	value int,
 	blinks int,
 	cache *stoneCache,
-	cacheWrite chan<- spottedValue,
 	resultWrite chan<- int,
 	wg *sync.WaitGroup,
 ) {
@@ -142,18 +134,7 @@ func walkIntoStone(
 		shared.Logger.Debug("Iterate within a stone path.", "current acc", current.acc)
 		// At the bottom.
 		if current.blinks <= 0 {
-			shared.Logger.Debug("Leaf reached, no blinks.", "value", current.value)
-			resultWrite <- 1
-			current.state = stateResolved
-			shared.Assert(len(current.kids) == 0, "leaf nodes don't have kids")
-			// Just for consistency, it should be impossible to actually have kids within a leaf
-			// node.
-			current.kids = nil
-			current.acc = 1
-			if current.parent != nil {
-				current.parent.acc += current.acc
-			}
-			current = current.parent
+			current = processLeaf(current, resultWrite)
 			continue
 		}
 
@@ -172,40 +153,12 @@ func walkIntoStone(
 					"cached",
 					cached,
 				)
-				current.state = stateResolved
-				current.kids = nil
-				current.acc = cached
-				if current.parent != nil {
-					current.parent.acc += current.acc
-				}
-				resultWrite <- cached
-				current = current.parent
+				current = processBranchWithCache(current, cached, resultWrite)
 				continue
 			}
 
 			shared.Logger.Debug("Generate kids.", "value", current.value, "blinks", current.blinks)
-			first, second, ok := transform(current.value)
-			left := &node{
-				value:  first,
-				blinks: current.blinks - 1,
-				parent: current,
-				kids:   []*node{},
-				acc:    0,
-				state:  stateUnresolved,
-			}
-			kids := []*node{left}
-			if ok {
-				kids = append(kids, &node{
-					value:  second,
-					blinks: current.blinks - 1,
-					parent: current,
-					kids:   []*node{},
-					acc:    0,
-					state:  stateUnresolved,
-				})
-			}
-			current.kids = kids
-			current = left
+			current = processBranch(current)
 			continue
 		}
 
@@ -218,25 +171,7 @@ func walkIntoStone(
 			current = unresolved
 			continue
 		}
-		shared.Assert(
-			current.acc > 0,
-			"impossible to not have kids, they were already processed so acc should be >0",
-		)
-		// This parent node is done.
-		current.state = stateResolved
-		current.kids = nil
-		cachedValue := spottedValue{
-			stone: spottedStone{
-				value: current.value,
-				spots: current.blinks,
-			},
-			value: current.acc,
-		}
-		cacheWrite <- cachedValue
-		if current.parent != nil {
-			current.parent.acc += current.acc
-		}
-		current = current.parent
+		current = finishBranch(current, cache)
 	}
 }
 
@@ -247,4 +182,70 @@ func findUnresolved(nodes []*node) *node {
 		}
 	}
 	return nil
+}
+
+func processLeaf(current *node, resultWrite chan<- int) *node {
+	shared.Logger.Debug("Leaf reached, no blinks.", "value", current.value)
+	resultWrite <- 1
+	current.state = stateResolved
+	shared.Assert(len(current.kids) == 0, "leaf nodes don't have kids")
+	// Just for consistency, it should be impossible to actually have kids within a leaf
+	// node.
+	current.kids = nil
+	current.acc = 1
+	if current.parent != nil {
+		current.parent.acc += current.acc
+	}
+	return current.parent
+}
+
+func processBranchWithCache(current *node, cached int, resultWrite chan<- int) *node {
+	current.state = stateResolved
+	current.kids = nil
+	current.acc = cached
+	if current.parent != nil {
+		current.parent.acc += current.acc
+	}
+	resultWrite <- cached
+	return current.parent
+}
+
+func processBranch(current *node) *node {
+	first, second, ok := transform(current.value)
+	left := &node{
+		value:  first,
+		blinks: current.blinks - 1,
+		parent: current,
+		kids:   []*node{},
+		acc:    0,
+		state:  stateUnresolved,
+	}
+	kids := []*node{left}
+	if ok {
+		kids = append(kids, &node{
+			value:  second,
+			blinks: current.blinks - 1,
+			parent: current,
+			kids:   []*node{},
+			acc:    0,
+			state:  stateUnresolved,
+		})
+	}
+	current.kids = kids
+	return left
+}
+
+func finishBranch(current *node, cache *stoneCache) *node {
+	shared.Assert(
+		current.acc > 0,
+		"impossible to not have kids, they were already processed so acc should be >0",
+	)
+	// This parent node is done.
+	current.state = stateResolved
+	current.kids = nil
+	cache.set(spottedStone{value: current.value, spots: current.blinks}, current.acc)
+	if current.parent != nil {
+		current.parent.acc += current.acc
+	}
+	return current.parent
 }
