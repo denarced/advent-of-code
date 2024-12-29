@@ -31,8 +31,8 @@ func deriveUniqueAntinodeLocations(lines []string, resonantHarmonics bool) *shar
 			for _, each := range deriveAntinodes(
 				perm[0],
 				perm[1],
-				brd.MaxX,
-				brd.MaxY,
+				brd.GetWidth()-1,
+				brd.GetHeight()-1,
 				resonantHarmonics) {
 				antinodes.Add(each)
 			}

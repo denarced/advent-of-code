@@ -335,21 +335,30 @@ func StripPadding(lines []string) []string {
 }
 
 type Board struct {
-	lines    []string
-	MaxX     int
-	MaxY     int
 	ReadOnly bool
+	grid     [][]rune
 }
 
 func NewBoard(lines []string) *Board {
-	brd := &Board{lines: lines}
-	if len(lines) == 0 {
-		return brd
+	brd := new(Board)
+	width := 0
+	brd.grid = createGrid(lines)
+	height := len(brd.grid)
+	if height > 0 {
+		width = len(brd.grid[0])
 	}
-	brd.MaxY = len(lines) - 1
-	brd.MaxX = len([]rune(lines[0])) - 1
-	Logger.Info("Board created, max coordinates.", "x", brd.MaxX, "y", brd.MaxY)
+	Logger.Info("Board created, max coordinates.", "width", width, "height", height)
 	return brd
+}
+
+func createGrid(lines []string) [][]rune {
+	grid := make([][]rune, len(lines))
+	lineCount := len(lines)
+	for y := 0; y < lineCount; y++ {
+		line := lines[Abs(y-lineCount+1)]
+		grid[y] = []rune(line)
+	}
+	return grid
 }
 
 // Loc is in proper x-y coordinates.
@@ -362,12 +371,10 @@ func NewBoard(lines []string) *Board {
 type BoardIterCb func(loc Loc, c rune) bool
 
 func (v *Board) Iter(cb BoardIterCb) {
-	lineCount := len(v.lines)
-	for y := 0; y < lineCount; y++ {
-		line := v.lines[Abs(y-lineCount+1)]
-		runes := []rune(line)
-		for x := 0; x < len(runes); x++ {
-			if !cb(Loc{X: x, Y: y}, runes[x]) {
+	for y := 0; y < len(v.grid); y++ {
+		width := len(v.grid[y])
+		for x := 0; x < width; x++ {
+			if !cb(Loc{X: x, Y: y}, v.grid[y][x]) {
 				return
 			}
 		}
@@ -376,15 +383,18 @@ func (v *Board) Iter(cb BoardIterCb) {
 
 func (v *Board) Get(loc Loc) (c rune, ok bool) {
 	x := loc.X
-	if x < 0 || v.MaxX < x {
-		return
-	}
 	y := loc.Y
-	if y < 0 || v.MaxY < y {
+	if x < 0 || y < 0 {
 		return
 	}
-	line := v.lines[Abs(y-len(v.lines)+1)]
-	c = []rune(line)[x]
+	if y >= len(v.grid) {
+		return
+	}
+	line := v.grid[y]
+	if x >= len(line) {
+		return
+	}
+	c = line[x]
 	ok = true
 	return
 }
@@ -401,22 +411,18 @@ func (v *Board) Set(loc Loc, c rune) {
 	if v.ReadOnly {
 		panic("Board is read-only.")
 	}
-	x := loc.X
-	if x < 0 || v.MaxX < x {
-		Logger.Error("Illegal location for X.", "loc", loc, "c", c)
-		panic("Illegal location for X.")
-	}
 	y := loc.Y
-	if y < 0 || v.MaxY < y {
+	if y < 0 || len(v.grid) <= y {
 		Logger.Error("Illegal location for Y.", "loc", loc, "c", c)
 		panic("Illegal location for Y.")
 	}
-	lineIndex := Abs(y - len(v.lines) + 1)
-	line := v.lines[lineIndex]
-	runes := []rune(line)
-	runes[x] = c
-	line = string(runes)
-	v.lines[lineIndex] = line
+	line := v.grid[y]
+	x := loc.X
+	if x < 0 || len(line) <= x {
+		Logger.Error("Illegal location for X.", "loc", loc, "c", c)
+		panic("Illegal location for X.")
+	}
+	line[x] = c
 }
 
 func (v *Board) NextTo(loc Loc, c rune) []Loc {
@@ -437,11 +443,21 @@ func (v *Board) NextTo(loc Loc, c rune) []Loc {
 }
 
 func (v *Board) CountArea() int {
-	return (v.MaxX + 1) * (v.MaxY + 1)
+	height := len(v.grid)
+	if height == 0 {
+		return 0
+	}
+	width := len(v.grid[0])
+	return width * height
 }
 
 func (v *Board) GetLines() []string {
-	return v.lines
+	lines := []string{}
+	for y := len(v.grid) - 1; y >= 0; y-- {
+		line := string(v.grid[y])
+		lines = append(lines, line)
+	}
+	return lines
 }
 
 func (v *Board) FindOrDie(c rune) Loc {
@@ -460,7 +476,27 @@ func (v *Board) FindOrDie(c rune) Loc {
 }
 
 func (v *Board) Copy() *Board {
-	return NewBoard(append([]string{}, v.lines...))
+	grid := make([][]rune, 0, len(v.grid))
+	for _, line := range v.grid {
+		grid = append(grid, append([]rune{}, line...))
+	}
+
+	return &Board{
+		ReadOnly: v.ReadOnly,
+		grid:     grid,
+	}
+}
+
+func (v *Board) GetWidth() int {
+	height := len(v.grid)
+	if height == 0 {
+		return 0
+	}
+	return len(v.grid[0])
+}
+
+func (v *Board) GetHeight() int {
+	return len(v.grid)
 }
 
 func Pow(b, e int) int {

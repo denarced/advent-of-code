@@ -48,7 +48,7 @@ func countGps(brd *shared.Board, doubled bool) int {
 	}
 	brd.Iter(func(loc shared.Loc, c rune) bool {
 		if c == ch {
-			yDistance := brd.MaxY - loc.Y
+			yDistance := brd.GetHeight() - 1 - loc.Y
 			shared.Logger.Debug("Add to total.", "X", loc.X, "Y distance", yDistance)
 			total += loc.X + 100*yDistance
 		}

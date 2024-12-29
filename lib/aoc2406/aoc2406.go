@@ -80,7 +80,7 @@ func (v *fatBoard) findIndefiniteBlock() bool {
 	w.nestedBrd.Set(possible, '#')
 	shared.Logger.Debug("Find-indef.", "curr", w.curr)
 	turnCount := 0
-	for i := 0; i < 100*shared.Max(v.nestedBrd.MaxX+1, v.nestedBrd.MaxY+1); i++ {
+	for i := 0; i < 100*shared.Max(v.nestedBrd.GetWidth(), v.nestedBrd.GetHeight()); i++ {
 		if w.visited.Has(w.deriveNextVector()) {
 			shared.Logger.Info("Found block that causes indefinite loop.", "block", possible)
 			return true
