@@ -2,6 +2,7 @@ package aoc2411
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ func TestSplitStone(t *testing.T) {
 }
 
 func TestWalkIntoStones(t *testing.T) {
-	run := func(name string, values []int, blinks int, expected int) {
+	run := func(name string, values []int, blinks, expected int) {
 		if name == "" {
 			plural := ""
 			if blinks != 1 {
@@ -43,7 +44,7 @@ func TestWalkIntoStones(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
 			actual := CountStones(values, blinks)
-			req.Equal(expected, actual)
+			req.Equal(big.NewInt(int64(expected)), actual)
 		})
 	}
 

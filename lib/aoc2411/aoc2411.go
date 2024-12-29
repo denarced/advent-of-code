@@ -3,6 +3,7 @@ package aoc2411
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -49,16 +50,16 @@ type node struct {
 	stone  blinkStone
 	parent *node
 	kids   []*node
-	acc    int
+	acc    *big.Int
 	state  int
 }
 
 type stoneCache struct {
-	m  map[blinkStone]int
+	m  map[blinkStone]*big.Int
 	mu sync.Mutex
 }
 
-func (v *stoneCache) set(stone blinkStone, count int) {
+func (v *stoneCache) set(stone blinkStone, count *big.Int) {
 	v.mu.Lock()
 	if _, exists := v.m[stone]; !exists {
 		v.m[stone] = count
@@ -66,7 +67,7 @@ func (v *stoneCache) set(stone blinkStone, count int) {
 	v.mu.Unlock()
 }
 
-func (v *stoneCache) get(stone blinkStone) (value int, exists bool) {
+func (v *stoneCache) get(stone blinkStone) (value *big.Int, exists bool) {
 	v.mu.Lock()
 	value, exists = v.m[stone]
 	v.mu.Unlock()
@@ -79,17 +80,17 @@ func (v *stoneCache) size() int {
 	return len(v.m)
 }
 
-func CountStones(values []int, blinks int) int {
+func CountStones(values []int, blinks int) *big.Int {
 	cache := &stoneCache{
-		m: map[blinkStone]int{},
+		m: map[blinkStone]*big.Int{},
 	}
 
-	resultCh := make(chan int)
-	totalCh := make(chan int)
+	resultCh := make(chan *big.Int)
+	totalCh := make(chan *big.Int)
 	go func() {
-		total := 0
+		total := big.NewInt(0)
 		for each := range resultCh {
-			total += each
+			total.Add(total, each)
 		}
 		totalCh <- total
 	}()
@@ -110,7 +111,7 @@ func walkIntoStone(
 	value int,
 	blinks int,
 	cache *stoneCache,
-	resultWrite chan<- int,
+	resultWrite chan<- *big.Int,
 	wg *sync.WaitGroup,
 ) {
 	defer wg.Done()
@@ -121,7 +122,7 @@ func walkIntoStone(
 		},
 		parent: nil,
 		kids:   []*node{},
-		acc:    0,
+		acc:    big.NewInt(0),
 		state:  stateUnresolved,
 	}
 	current := root
@@ -173,27 +174,27 @@ func findUnresolved(nodes []*node) *node {
 	return nil
 }
 
-func processLeaf(current *node, resultWrite chan<- int) *node {
+func processLeaf(current *node, resultWrite chan<- *big.Int) *node {
 	shared.Logger.Debug("Leaf reached, no blinks.", "value", current.stone.value)
-	resultWrite <- 1
+	resultWrite <- big.NewInt(1)
 	current.state = stateResolved
 	shared.Assert(len(current.kids) == 0, "leaf nodes don't have kids")
 	// Just for consistency, it should be impossible to actually have kids within a leaf
 	// node.
 	current.kids = nil
-	current.acc = 1
+	current.acc = big.NewInt(1)
 	if current.parent != nil {
-		current.parent.acc += current.acc
+		current.parent.acc.Add(current.parent.acc, current.acc)
 	}
 	return current.parent
 }
 
-func processBranchWithCache(current *node, cached int, resultWrite chan<- int) *node {
+func processBranchWithCache(current *node, cached *big.Int, resultWrite chan<- *big.Int) *node {
 	current.state = stateResolved
 	current.kids = nil
 	current.acc = cached
 	if current.parent != nil {
-		current.parent.acc += current.acc
+		current.parent.acc.Add(current.parent.acc, current.acc)
 	}
 	resultWrite <- cached
 	return current.parent
@@ -208,7 +209,7 @@ func processBranch(current *node) *node {
 		},
 		parent: current,
 		kids:   []*node{},
-		acc:    0,
+		acc:    big.NewInt(0),
 		state:  stateUnresolved,
 	}
 	kids := []*node{left}
@@ -220,7 +221,7 @@ func processBranch(current *node) *node {
 			},
 			parent: current,
 			kids:   []*node{},
-			acc:    0,
+			acc:    big.NewInt(0),
 			state:  stateUnresolved,
 		})
 	}
@@ -230,7 +231,7 @@ func processBranch(current *node) *node {
 
 func finishBranch(current *node, cache *stoneCache) *node {
 	shared.Assert(
-		current.acc > 0,
+		bigIntIsGreaterThan(current.acc, big.NewInt(0)),
 		"impossible to not have kids, they were already processed so acc should be >0",
 	)
 	// This parent node is done.
@@ -238,7 +239,12 @@ func finishBranch(current *node, cache *stoneCache) *node {
 	current.kids = nil
 	cache.set(current.stone, current.acc)
 	if current.parent != nil {
-		current.parent.acc += current.acc
+		current.parent.acc.Add(current.parent.acc, current.acc)
 	}
 	return current.parent
+}
+
+// Return true when a>b.
+func bigIntIsGreaterThan(a, b *big.Int) bool {
+	return a.Cmp(b) > 0
 }
