@@ -21,7 +21,7 @@ func main() {
 	fmt.Println("Stone count:")
 	for _, each := range []int{25, 75} {
 		alpha := time.Now()
-		count := aoc2411.CountStones(each, stones)
+		count := aoc2411.CountStones(stones, each)
 		elapsed := time.Since(alpha)
 		fmt.Printf("    %02d blinks: %d (%v)\n", each, count, elapsed)
 	}

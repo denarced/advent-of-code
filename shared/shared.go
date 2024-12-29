@@ -63,6 +63,15 @@ func Die(err error, message string) {
 	os.Exit(2)
 }
 
+// If "must" isn't true, panic with message "message".
+func Assert(must bool, message string) {
+	if must {
+		return
+	}
+	Logger.Error("Drop the axe: Assert failed.", "message", message)
+	panic(message)
+}
+
 func Or[T any](o bool, yes, no T) T {
 	if o {
 		return yes

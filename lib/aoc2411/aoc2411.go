@@ -3,9 +3,14 @@ package aoc2411
 import (
 	"fmt"
 	"math"
-	"slices"
+	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
+)
+
+const (
+	stateUnresolved = iota
+	stateResolved
 )
 
 type spottedStone struct {
@@ -13,62 +18,9 @@ type spottedStone struct {
 	spots int
 }
 
-func CountStones(blinkCount int, stoneValues []int) int {
-	shared.Logger.Info("Count stones.", "blink count", blinkCount, "stone count", len(stoneValues))
-
-	stones := []spottedStone{}
-	stoneToCount := map[spottedStone]int{}
-	for _, each := range stoneValues {
-		stones = append(stones, spottedStone{value: each, spots: blinkCount})
-		if blinkCount > 2 {
-			countNodes(buildPartialTree(each, blinkCount), stoneToCount)
-		}
-	}
-	shared.Logger.Info("Tree built.", "size", len(stoneToCount))
-	cycle := 10_000_000
-	round := cycle
-	totalCount := 0
-	halfBlink := blinkCount / 2
-	getCachedCount := func(each *spottedStone) int {
-		if 0 < each.spots && each.spots < halfBlink {
-			if count, ok := stoneToCount[*each]; ok {
-				return count
-			}
-		}
-		return 0
-	}
-mainLoop:
-	for len(stones) > 0 {
-		round--
-		each := stones[0]
-		stones = stones[1:]
-		if cachedCount := getCachedCount(&each); cachedCount > 0 {
-			totalCount += cachedCount
-			continue
-		}
-		for range each.spots {
-			if cachedCount := getCachedCount(&each); cachedCount > 0 {
-				totalCount += cachedCount
-				continue mainLoop
-			}
-
-			first, second, cloned := transform(each.value)
-			each.spots--
-			each.value = first
-			if cloned {
-				// Prepend so newer stones with less steps are processed first. That way memory
-				// usage is reduced significantly because we remove stones quicker from "stones"
-				// slice.
-				stones = slices.Insert(stones, 0, spottedStone{value: second, spots: each.spots})
-			}
-		}
-		totalCount++
-		if round <= 0 {
-			round = cycle
-			shared.Logger.Info("Sort.", "total count", totalCount, "stone count", len(stones))
-		}
-	}
-	return totalCount
+type spottedValue struct {
+	stone spottedStone
+	value int
 }
 
 func transform(stone int) (first int, second int, cloned bool) {
@@ -103,63 +55,196 @@ type node struct {
 	blinks int
 	parent *node
 	kids   []*node
+	acc    int
+	state  int
 }
 
-func countNodes(nod *node, pre map[spottedStone]int) (sum int) {
-	if nod == nil {
-		return
+type stoneCache struct {
+	m  map[spottedStone]int
+	mu sync.Mutex
+}
+
+func (v *stoneCache) set(stone spottedStone, count int) {
+	v.mu.Lock()
+	if _, exists := v.m[stone]; !exists {
+		v.m[stone] = count
 	}
-	if len(nod.kids) == 0 {
-		sum = 1
-		return
-	}
-	for _, each := range nod.kids {
-		sum += countNodes(each, pre)
-	}
-	spotted := spottedStone{
-		value: nod.value,
-		spots: nod.blinks,
-	}
-	if pre != nil {
-		pre[spotted] = sum
-	}
+	v.mu.Unlock()
+}
+
+func (v *stoneCache) get(stone spottedStone) (value int, exists bool) {
+	v.mu.Lock()
+	value, exists = v.m[stone]
+	v.mu.Unlock()
 	return
 }
 
-func buildPartialTree(stone, blinks int) *node {
-	var half *node
-	{
-		current := &node{value: stone, blinks: blinks}
-		for current.blinks > blinks/2 {
-			first, _, _ := transform(current.value)
-			left := &node{value: first, blinks: current.blinks - 1, parent: current}
-			current.kids = []*node{left}
-			current = left
-		}
-		half = current
-	}
+func (v *stoneCache) size() int {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return len(v.m)
+}
 
-	stack := []*node{half}
-	for len(stack) > 0 {
-		each := stack[0]
-		stack = stack[1:]
-		if each.blinks <= 0 {
-			if len(each.kids) > 0 {
-				panic("what? kids?")
+func CountStones(values []int, blinks int) int {
+	cacheCh := make(chan spottedValue)
+	cache := &stoneCache{
+		m: map[spottedStone]int{},
+	}
+	go func() {
+		for each := range cacheCh {
+			cache.set(each.stone, each.value)
+		}
+	}()
+
+	resultCh := make(chan int)
+	totalCh := make(chan int)
+	go func() {
+		total := 0
+		for each := range resultCh {
+			total += each
+		}
+		totalCh <- total
+	}()
+
+	var wg sync.WaitGroup
+	for _, each := range values {
+		wg.Add(1)
+		go walkIntoStone(each, blinks, cache, cacheCh, resultCh, &wg)
+	}
+	wg.Wait()
+	close(cacheCh)
+	close(resultCh)
+	count := <-totalCh
+	shared.Logger.Info("Stones counted.", "count", count, "cache size", cache.size())
+	return count
+}
+
+func walkIntoStone(
+	value int,
+	blinks int,
+	cache *stoneCache,
+	cacheWrite chan<- spottedValue,
+	resultWrite chan<- int,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	root := &node{
+		value:  value,
+		blinks: blinks,
+		parent: nil,
+		kids:   []*node{},
+		acc:    0,
+		state:  stateUnresolved,
+	}
+	current := root
+	for current != nil {
+		shared.Assert(current.state != stateResolved, "resolved state is impossible")
+		shared.Logger.Debug("Iterate within a stone path.", "current acc", current.acc)
+		// At the bottom.
+		if current.blinks <= 0 {
+			shared.Logger.Debug("Leaf reached, no blinks.", "value", current.value)
+			resultWrite <- 1
+			current.state = stateResolved
+			shared.Assert(len(current.kids) == 0, "leaf nodes don't have kids")
+			// Just for consistency, it should be impossible to actually have kids within a leaf
+			// node.
+			current.kids = nil
+			current.acc = 1
+			if current.parent != nil {
+				current.parent.acc += current.acc
 			}
+			current = current.parent
 			continue
 		}
-		first, second, cloned := transform(each.value)
-		kids := []*node{}
-		left := &node{value: first, blinks: each.blinks - 1, parent: each}
-		stack = append(stack, left)
-		kids = append(kids, left)
-		if cloned {
-			right := &node{value: second, blinks: each.blinks - 1, parent: each}
-			kids = append(kids, right)
-			stack = append(stack, right)
+
+		shared.Logger.Debug("Processing branch.", "blinks", current.blinks, "value", current.value)
+		if len(current.kids) == 0 {
+			if cached, exists := cache.get(spottedStone{
+				value: current.value,
+				spots: current.blinks,
+			}); exists {
+				shared.Logger.Debug(
+					"Cache hit.",
+					"blinks",
+					current.blinks,
+					"value",
+					current.value,
+					"cached",
+					cached,
+				)
+				current.state = stateResolved
+				current.kids = nil
+				current.acc = cached
+				if current.parent != nil {
+					current.parent.acc += current.acc
+				}
+				resultWrite <- cached
+				current = current.parent
+				continue
+			}
+
+			shared.Logger.Debug("Generate kids.", "value", current.value, "blinks", current.blinks)
+			first, second, ok := transform(current.value)
+			left := &node{
+				value:  first,
+				blinks: current.blinks - 1,
+				parent: current,
+				kids:   []*node{},
+				acc:    0,
+				state:  stateUnresolved,
+			}
+			kids := []*node{left}
+			if ok {
+				kids = append(kids, &node{
+					value:  second,
+					blinks: current.blinks - 1,
+					parent: current,
+					kids:   []*node{},
+					acc:    0,
+					state:  stateUnresolved,
+				})
+			}
+			current.kids = kids
+			current = left
+			continue
 		}
-		each.kids = kids
+
+		shared.Assert(
+			len(current.kids) > 0,
+			"must have kids, all cases without them were already covered",
+		)
+		unresolved := findUnresolved(current.kids)
+		if unresolved != nil {
+			current = unresolved
+			continue
+		}
+		shared.Assert(
+			current.acc > 0,
+			"impossible to not have kids, they were already processed so acc should be >0",
+		)
+		// This parent node is done.
+		current.state = stateResolved
+		current.kids = nil
+		cachedValue := spottedValue{
+			stone: spottedStone{
+				value: current.value,
+				spots: current.blinks,
+			},
+			value: current.acc,
+		}
+		cacheWrite <- cachedValue
+		if current.parent != nil {
+			current.parent.acc += current.acc
+		}
+		current = current.parent
 	}
-	return half
+}
+
+func findUnresolved(nodes []*node) *node {
+	for _, each := range nodes {
+		if each.state == stateUnresolved {
+			return each
+		}
+	}
+	return nil
 }
