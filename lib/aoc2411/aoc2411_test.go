@@ -37,15 +37,7 @@ func TestWalkIntoStones(t *testing.T) {
 			if blinks != 1 {
 				plural = "s"
 			}
-			name = fmt.Sprintf(
-				"%d blink%s %s",
-				blinks,
-				plural,
-				strings.Join(
-					shared.MapValues(values, func(i int) string {
-						return strconv.Itoa(i)
-					}),
-					", "))
+			name = fmt.Sprintf("%d blink%s %s", blinks, plural, joinInts(values, ", "))
 		}
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
@@ -87,4 +79,13 @@ func TestWalkIntoStones(t *testing.T) {
 	// 5. 4048 1 4048 8096 28 67 60 32
 	// 6. 40 48 2024 40 48 80 96 2 8 6 7 6 0 3 2
 	run("", []int{17}, 6, 15)
+}
+
+func joinInts(s []int, sep string) string {
+	strs := shared.MapValues(
+		s,
+		func(i int) string {
+			return strconv.Itoa(i)
+		})
+	return strings.Join(strs, sep)
 }

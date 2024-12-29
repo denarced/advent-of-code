@@ -13,14 +13,9 @@ const (
 	stateResolved
 )
 
-type spottedStone struct {
-	value int
-	spots int
-}
-
-type spottedValue struct {
-	stone spottedStone
-	value int
+type blinkStone struct {
+	value  int
+	blinks int
 }
 
 func transform(stone int) (first int, second int, cloned bool) {
@@ -51,8 +46,7 @@ func splitStone(stone int) (first int, second int, ok bool) {
 }
 
 type node struct {
-	value  int
-	blinks int
+	stone  blinkStone
 	parent *node
 	kids   []*node
 	acc    int
@@ -60,11 +54,11 @@ type node struct {
 }
 
 type stoneCache struct {
-	m  map[spottedStone]int
+	m  map[blinkStone]int
 	mu sync.Mutex
 }
 
-func (v *stoneCache) set(stone spottedStone, count int) {
+func (v *stoneCache) set(stone blinkStone, count int) {
 	v.mu.Lock()
 	if _, exists := v.m[stone]; !exists {
 		v.m[stone] = count
@@ -72,7 +66,7 @@ func (v *stoneCache) set(stone spottedStone, count int) {
 	v.mu.Unlock()
 }
 
-func (v *stoneCache) get(stone spottedStone) (value int, exists bool) {
+func (v *stoneCache) get(stone blinkStone) (value int, exists bool) {
 	v.mu.Lock()
 	value, exists = v.m[stone]
 	v.mu.Unlock()
@@ -87,7 +81,7 @@ func (v *stoneCache) size() int {
 
 func CountStones(values []int, blinks int) int {
 	cache := &stoneCache{
-		m: map[spottedStone]int{},
+		m: map[blinkStone]int{},
 	}
 
 	resultCh := make(chan int)
@@ -121,8 +115,10 @@ func walkIntoStone(
 ) {
 	defer wg.Done()
 	root := &node{
-		value:  value,
-		blinks: blinks,
+		stone: blinkStone{
+			value:  value,
+			blinks: blinks,
+		},
 		parent: nil,
 		kids:   []*node{},
 		acc:    0,
@@ -133,31 +129,24 @@ func walkIntoStone(
 		shared.Assert(current.state != stateResolved, "resolved state is impossible")
 		shared.Logger.Debug("Iterate within a stone path.", "current acc", current.acc)
 		// At the bottom.
-		if current.blinks <= 0 {
+		if current.stone.blinks <= 0 {
 			current = processLeaf(current, resultWrite)
 			continue
 		}
 
-		shared.Logger.Debug("Processing branch.", "blinks", current.blinks, "value", current.value)
+		shared.Logger.Debug("Processing branch.", "stone", current.stone)
 		if len(current.kids) == 0 {
-			if cached, exists := cache.get(spottedStone{
-				value: current.value,
-				spots: current.blinks,
-			}); exists {
+			if cached, exists := cache.get(current.stone); exists {
 				shared.Logger.Debug(
 					"Cache hit.",
-					"blinks",
-					current.blinks,
-					"value",
-					current.value,
-					"cached",
-					cached,
+					"stone", current.stone,
+					"cached", cached,
 				)
 				current = processBranchWithCache(current, cached, resultWrite)
 				continue
 			}
 
-			shared.Logger.Debug("Generate kids.", "value", current.value, "blinks", current.blinks)
+			shared.Logger.Debug("Generate kids.", "stone", current.stone)
 			current = processBranch(current)
 			continue
 		}
@@ -185,7 +174,7 @@ func findUnresolved(nodes []*node) *node {
 }
 
 func processLeaf(current *node, resultWrite chan<- int) *node {
-	shared.Logger.Debug("Leaf reached, no blinks.", "value", current.value)
+	shared.Logger.Debug("Leaf reached, no blinks.", "value", current.stone.value)
 	resultWrite <- 1
 	current.state = stateResolved
 	shared.Assert(len(current.kids) == 0, "leaf nodes don't have kids")
@@ -211,10 +200,12 @@ func processBranchWithCache(current *node, cached int, resultWrite chan<- int) *
 }
 
 func processBranch(current *node) *node {
-	first, second, ok := transform(current.value)
+	first, second, ok := transform(current.stone.value)
 	left := &node{
-		value:  first,
-		blinks: current.blinks - 1,
+		stone: blinkStone{
+			value:  first,
+			blinks: current.stone.blinks - 1,
+		},
 		parent: current,
 		kids:   []*node{},
 		acc:    0,
@@ -223,8 +214,10 @@ func processBranch(current *node) *node {
 	kids := []*node{left}
 	if ok {
 		kids = append(kids, &node{
-			value:  second,
-			blinks: current.blinks - 1,
+			stone: blinkStone{
+				value:  second,
+				blinks: current.stone.blinks - 1,
+			},
 			parent: current,
 			kids:   []*node{},
 			acc:    0,
@@ -243,7 +236,7 @@ func finishBranch(current *node, cache *stoneCache) *node {
 	// This parent node is done.
 	current.state = stateResolved
 	current.kids = nil
-	cache.set(spottedStone{value: current.value, spots: current.blinks}, current.acc)
+	cache.set(current.stone, current.acc)
 	if current.parent != nil {
 		current.parent.acc += current.acc
 	}
