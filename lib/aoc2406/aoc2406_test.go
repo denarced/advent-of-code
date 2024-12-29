@@ -214,7 +214,7 @@ func TestBoardCopy(t *testing.T) {
 		"..#.",
 		".^..",
 	}
-	orig := newFatBoard(shared.Loc{}, shared.NewBoard(lines))
+	orig := newFatBoard(vector{loc: shared.Loc{}, dir: shared.RealNorth}, shared.NewBoard(lines))
 	copied := orig.copy()
 	copied.move(copied.deriveNextLocation()) // Curr.loc and visited modified.
 	blockLoc := shared.Loc{X: 0, Y: 1}
@@ -369,7 +369,7 @@ func newTestBoard(
 	visited []vector,
 	lines []string,
 ) *fatBoard {
-	fatBoard := newFatBoard(curr, shared.NewBoard(lines))
+	fatBoard := newFatBoard(vector{loc: curr, dir: shared.RealNorth}, shared.NewBoard(lines))
 	if visited != nil {
 		fatBoard.visited = shared.NewSet(visited)
 	}

@@ -3,6 +3,7 @@ package aoc2406
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
 )
@@ -19,15 +20,11 @@ type fatBoard struct {
 	nestedBrd *shared.Board
 }
 
-func newFatBoard(
-	init shared.Loc,
-	nestedBrd *shared.Board,
-) *fatBoard {
-	curr := vector{loc: init, dir: shared.RealNorth}
+func newFatBoard(init vector, nestedBrd *shared.Board) *fatBoard {
 	return &fatBoard{
-		curr:      curr,
-		visited:   shared.NewSet([]vector{curr}),
-		stepped:   shared.NewSet([]shared.Loc{curr.loc}),
+		curr:      init,
+		visited:   shared.NewSet([]vector{init}),
+		stepped:   shared.NewSet([]shared.Loc{init.loc}),
 		nestedBrd: nestedBrd,
 	}
 }
@@ -70,47 +67,44 @@ func (v *fatBoard) move(l shared.Loc) {
 	v.stepped.Add(l)
 }
 
-func (v *fatBoard) findIndefiniteBlock() bool {
-	w := v.copy()
-	possible := w.deriveNextLocation()
-	// Can't place a block on path already travelled, it would invalidate the past.
-	if !v.isInside(possible) || v.stepped.Has(possible) {
-		return false
-	}
-	w.nestedBrd.Set(possible, '#')
-	shared.Logger.Debug("Find-indef.", "curr", w.curr)
+func findIndefiniteBlock(
+	brd *fatBoard,
+	possible shared.Loc,
+	wg *sync.WaitGroup,
+	locCh chan<- shared.Loc,
+) {
+	defer wg.Done()
+	brd.nestedBrd.Set(possible, '#')
+	shared.Logger.Debug("Find-indef.", "curr", brd.curr)
 	turnCount := 0
-	for i := 0; i < 100*shared.Max(v.nestedBrd.GetWidth(), v.nestedBrd.GetHeight()); i++ {
-		if w.visited.Has(w.deriveNextVector()) {
+	for i := 0; i < 100*shared.Max(brd.nestedBrd.GetWidth(), brd.nestedBrd.GetHeight()); i++ {
+		if brd.visited.Has(brd.deriveNextVector()) {
 			shared.Logger.Info("Found block that causes indefinite loop.", "block", possible)
-			return true
+			locCh <- possible
+			return
 		}
 
-		next := w.deriveNextLocation()
-		if !w.isInside(next) {
-			return false
+		next := brd.deriveNextLocation()
+		if !brd.isInside(next) {
+			return
 		}
-		if w.isBlock(next) {
-			w.turn()
+		if brd.isBlock(next) {
+			brd.turn()
 			turnCount++
 			if turnCount <= 4 {
 				continue
 			}
-			return true
+			locCh <- possible
+			return
 		}
 		turnCount = 0
-		w.move(next)
+		brd.move(next)
 	}
 	panic("indef loop")
 }
 
 func (v *fatBoard) copy() *fatBoard {
-	return &fatBoard{
-		curr:      v.curr,
-		visited:   v.visited.Copy(),
-		stepped:   v.stepped.Copy(),
-		nestedBrd: v.nestedBrd.Copy(),
-	}
+	return newFatBoard(v.curr, v.nestedBrd.Copy())
 }
 
 func (v *fatBoard) deriveVisitedCount() int {
@@ -141,7 +135,7 @@ func CountDistinctPositions(lines []string) int {
 	}
 	shared.Logger.Info("Count distinct positions.", "line count", len(lines))
 	brd := shared.NewBoard(lines)
-	fatBrd := newFatBoard(brd.FindOrDie('^'), brd)
+	fatBrd := newFatBoard(vector{loc: brd.FindOrDie('^'), dir: shared.RealNorth}, brd)
 	counter := 7_000
 	for {
 		next := fatBrd.deriveNextLocation()
@@ -173,16 +167,26 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 	}
 	shared.Logger.Info("Derive infinite loop locations.")
 	nested := shared.NewBoard(lines)
-	brd := newFatBoard(nested.FindOrDie('^'), nested)
+	brd := newFatBoard(vector{loc: nested.FindOrDie('^'), dir: shared.RealNorth}, nested)
 	indefLocations := shared.NewSet([]shared.Loc{})
+	locCh := make(chan shared.Loc)
+	finishedCh := make(chan int)
+	go func() {
+		for each := range locCh {
+			indefLocations.Add(each)
+		}
+		finishedCh <- 0
+	}()
+	var wg sync.WaitGroup
 	for {
-		shared.Logger.Debug("Now.", "location", brd.curr)
-		if brd.findIndefiniteBlock() {
-			next := brd.deriveNextLocation()
-			indefLocations.Add(next)
+		next := brd.deriveNextLocation()
+		shared.Logger.Debug("Now.", "location", brd.curr, "next", next)
+		// Can't place a block on path already travelled, it would invalidate the past.
+		if brd.isInside(next) && !brd.stepped.Has(next) {
+			wg.Add(1)
+			go findIndefiniteBlock(brd.copy(), next, &wg, locCh)
 		}
 
-		next := brd.deriveNextLocation()
 		if !brd.isInside(next) {
 			shared.Logger.Info("Guard left the area.")
 			break
@@ -193,6 +197,9 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 		}
 		brd.move(next)
 	}
+	wg.Wait()
+	close(locCh)
+	<-finishedCh
 	shared.Logger.Info("Indefinite blocks.", "locations", indefLocations)
 	return indefLocations
 }

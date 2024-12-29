@@ -12,12 +12,9 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-06.txt")
-	shared.Die(err, "open file")
+	file := shared.OrPanic2(os.Open("data/2024-06.txt"))("open input file")
 	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
+	lines := shared.OrPanic2(shared.ReadLines(file))("read lines")
 
 	fmt.Println("Distinct positions:", aoc2406.CountDistinctPositions(lines))
 	fmt.Println(
