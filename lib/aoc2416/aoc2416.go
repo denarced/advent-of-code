@@ -74,8 +74,8 @@ func CountLowestScore(lines []string, drawWinners bool) (int, int) {
 		if drawWinners {
 			draw(lines, winner.steps)
 		}
-		for _, each := range winner.steps {
-			bestSeats.Add(each)
+		for step := winner.steps; step != nil; step = step.parent {
+			bestSeats.Add(step.item)
 		}
 	}
 	seatCount := bestSeats.Count()
@@ -93,7 +93,7 @@ func count(
 	runners := &queue[runner]{
 		s: []runner{{
 			vec:   vector{loc: start, dir: shared.RealEast},
-			steps: []shared.Loc{start},
+			steps: addLink(nil, start),
 		}},
 	}
 	includeAllWinners := len(breaker.m) > 0
@@ -124,27 +124,16 @@ func count(
 			continue
 		}
 		possibleVectors := getPossibleVectors(brd, r.vec, possibleDirections)
-		copyCount := 0
 		for _, each := range possibleVectors {
 			cor := corner{vec: r.vec, turn: each.dir}
 			if slices.Contains(r.corners, cor) {
 				continue
 			}
-			copyCount++
 			copied := r
 			copied.points += derivePoints(copied.vec.dir, each.dir)
 			nextLoc := each.loc.Delta(shared.Loc(each.dir))
 			copied.vec.loc = nextLoc
-			if copyCount > 1 {
-				// Having multiple added runners somehow corrupts previously added runner's steps so
-				// we need to copy. However, constantly copying the steps is expensive so it's only
-				// done when necessary. With the actual input, the difference between copying and
-				// not copying is 17s vs 1m05s. With this avoidance, it's 24s.
-				copied.steps = append([]shared.Loc{}, copied.steps...)
-				copied.steps = append(copied.steps, nextLoc)
-			} else {
-				copied.steps = append(copied.steps, nextLoc)
-			}
+			copied.steps = addLink(copied.steps, nextLoc)
 			copied.vec.dir = each.dir
 			if len(possibleVectors) > 1 {
 				copied.corners = append(copied.corners, cor)
@@ -164,7 +153,7 @@ type runner struct {
 	points  int
 	vec     vector
 	corners []corner
-	steps   []shared.Loc
+	steps   *link[shared.Loc]
 }
 
 type corner struct {
@@ -241,14 +230,14 @@ func (v *pointBreak) isHigher(vec vector, points int) bool {
 	return true
 }
 
-func draw(lines []string, steps []shared.Loc) {
+func draw(lines []string, step *link[shared.Loc]) {
 	nanos := time.Now().UnixNano()
 	dirp := fmt.Sprintf("/tmp/aoc16/%d", nanos)
 	err := os.MkdirAll(dirp, 0755)
 	shared.Die(err, "Failed to create draw dir.")
 	brd := shared.NewBoard(append([]string{}, lines...))
-	for _, each := range steps {
-		brd.Set(each, 'O')
+	for ; step != nil; step = step.parent {
+		brd.Set(step.item, 'O')
 	}
 	content := strings.Join(brd.GetLines(), "\n") + "\n"
 	filep := filepath.Join(dirp, "board.txt")
@@ -296,5 +285,17 @@ func derivePossibleDirections(
 		shared.RealSouth: getPossibleDirections(all, shared.RealSouth),
 		shared.RealWest:  getPossibleDirections(all, shared.RealWest),
 		shared.RealNorth: getPossibleDirections(all, shared.RealNorth),
+	}
+}
+
+type link[T any] struct {
+	item   T
+	parent *link[T]
+}
+
+func addLink[T any](parent *link[T], item T) *link[T] {
+	return &link[T]{
+		item:   item,
+		parent: parent,
 	}
 }

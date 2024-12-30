@@ -13,12 +13,9 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-16.txt")
-	shared.Die(err, "open file")
+	file := shared.OrPanic2(os.Open("data/2024-16.txt"))("open file")
 	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
+	lines := shared.OrPanic2(shared.ReadLines(file))("ReadLines")
 
 	alpha := time.Now()
 	score, seatCount := aoc2416.CountLowestScore(lines, false)
