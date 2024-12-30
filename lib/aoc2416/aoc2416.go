@@ -16,7 +16,7 @@ const (
 	pointsTurn = 1_000
 )
 
-func CountLowestScore(lines []string, drawWinners bool) (int, int) {
+func CountLowestScore(lines []string, drawWinners bool) (minPoints int, seatCount int) {
 	shared.Logger.Info("Count lowest score.", "draw winners", drawWinners, "line count", len(lines))
 	brd := shared.NewBoard(lines)
 	start := brd.FindOrDie('S')
@@ -78,11 +78,12 @@ func CountLowestScore(lines []string, drawWinners bool) (int, int) {
 			bestSeats.Add(step.item)
 		}
 	}
-	seatCount := bestSeats.Count()
+	seatCount = bestSeats.Count()
 	shared.Logger.Info("Seats counted.", "count", seatCount)
 	return minPoints, seatCount
 }
 
+//revive:disable-next-line:function-result-limit
 func count(
 	breaker *pointBreak,
 	start, end shared.Loc,
@@ -112,9 +113,7 @@ func count(
 		if breaker.isHigher(r.vec, r.points) {
 			continue
 		}
-		// With real input about 0.5s better than "brd.GetOrDie(r.vec.loc) == 'E'".
 		if r.vec.loc == end {
-			shared.Logger.Info("Finished.", "points", r.points)
 			if minPoints == r.points {
 				winners = append(winners, r)
 			} else if minPoints > r.points {
@@ -125,19 +124,12 @@ func count(
 		}
 		possibleVectors := getPossibleVectors(brd, r.vec, possibleDirections)
 		for _, each := range possibleVectors {
-			cor := corner{vec: r.vec, turn: each.dir}
-			if slices.Contains(r.corners, cor) {
-				continue
-			}
 			copied := r
 			copied.points += derivePoints(copied.vec.dir, each.dir)
 			nextLoc := each.loc.Delta(shared.Loc(each.dir))
 			copied.vec.loc = nextLoc
 			copied.steps = addLink(copied.steps, nextLoc)
 			copied.vec.dir = each.dir
-			if len(possibleVectors) > 1 {
-				copied.corners = append(copied.corners, cor)
-			}
 			runners.add(copied)
 		}
 	}
@@ -150,15 +142,9 @@ type vector struct {
 }
 
 type runner struct {
-	points  int
-	vec     vector
-	corners []corner
-	steps   *link[shared.Loc]
-}
-
-type corner struct {
-	vec  vector
-	turn shared.Direction
+	points int
+	vec    vector
+	steps  *link[shared.Loc]
 }
 
 func getPossibleVectors(

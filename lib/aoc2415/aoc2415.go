@@ -113,7 +113,6 @@ func charToLoc(c rune) shared.Loc {
 	panic(fmt.Sprintf("Unknown direction: %c.", c))
 }
 
-// revive:disable-next-line:cognitive-complexity
 func walk(brd *shared.Board, directions []rune, doubled bool) {
 	robotLoc := findRobot(brd)
 	for _, d := range directions {
