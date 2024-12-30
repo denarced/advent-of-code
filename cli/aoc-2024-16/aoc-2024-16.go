@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/denarced/advent-of-code/lib/aoc2416"
 	"github.com/denarced/advent-of-code/shared"
@@ -17,9 +16,8 @@ func main() {
 	defer file.Close()
 	lines := shared.OrPanic2(shared.ReadLines(file))("ReadLines")
 
-	alpha := time.Now()
 	score, seatCount := aoc2416.CountLowestScore(lines, false)
-	fmt.Printf("Result (%v):\n", time.Since(alpha))
+	fmt.Printf("Result:\n")
 	fmt.Printf("    Score:      %d\n", score)
 	fmt.Printf("    Seat count: %d\n", seatCount)
 
