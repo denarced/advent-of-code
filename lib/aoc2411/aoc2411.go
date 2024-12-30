@@ -2,7 +2,6 @@ package aoc2411
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 	"sync"
 
@@ -35,7 +34,7 @@ func transform(stone int) (first int, second int, cloned bool) {
 }
 
 func splitStone(stone int) (first int, second int, ok bool) {
-	length := int(math.Log10(float64(stone))) + 1
+	length := shared.DigitLength(stone)
 	if length%2 != 0 {
 		return
 	}

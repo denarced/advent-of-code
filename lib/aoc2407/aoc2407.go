@@ -12,9 +12,10 @@ func DeriveCalibrationSum(lines []string, withConcat bool) int {
 	dtos := toCalibrationDtos(lines)
 	total := 0
 	sumTotal := 0
+	permGen := newPermutationGenerator()
 	for _, each := range dtos {
 		sumTotal += each.sum
-		if isValid(each, withConcat) {
+		if isValid(each, withConcat, permGen) {
 			total += each.sum
 		}
 	}
@@ -53,7 +54,7 @@ func toCalibrationDtos(lines []string) []calibrationDto {
 		})
 }
 
-func isValid(dto calibrationDto, withConcat bool) bool {
+func isValid(dto calibrationDto, withConcat bool, permGen *permutationGenerator) bool {
 	if len(dto.parts) == 1 {
 		return dto.sum == dto.parts[0]
 	}
@@ -61,34 +62,32 @@ func isValid(dto calibrationDto, withConcat bool) bool {
 	if withConcat {
 		base = 3
 	}
-	for _, each := range generatePermutations(len(dto.parts)-1, base) {
-		shared.Logger.Debug("Try permutation.", "dto", dto, "permutation", each)
-		sum := deriveSum(dto.parts, each)
+	for _, each := range permGen.generate(permutationSpec{length: len(dto.parts) - 1, base: base}) {
+		sum := deriveSum(dto, each)
 		if sum == dto.sum {
-			shared.Logger.Info("Valid calibration.", "dto", dto, "operators", each)
 			return true
 		}
-		shared.Logger.Debug("Invalid calibration.", "dto", dto, "operators", each)
 	}
-	shared.Logger.Debug("Invalid calibration.", "dto", dto)
 	return false
 }
 
-func deriveSum(nums, operators []int) int {
-	res, tail := nums[0], nums[1:]
-	for i := 0; i < len(tail); i++ {
+func deriveSum(dto calibrationDto, operators []int) int {
+	res, tail := dto.parts[0], dto.parts[1:]
+	for i, each := range tail {
+		if res > dto.sum {
+			return res
+		}
 		switch operators[i] {
 		case 0:
-			res += tail[i]
+			res += each
 		case 1:
-			res *= tail[i]
+			res *= each
 		case 2:
-			res = concat(res, tail[i])
+			res = concat(res, each)
 		default:
 			panic(fmt.Sprintf("Unknown operator: %d.", operators[i]))
 		}
 	}
-	shared.Logger.Debug("Derived.", "result", res, "nums", nums, "operators", operators)
 	return res
 }
 
@@ -106,11 +105,9 @@ func generatePermutations(length, base int) [][]int {
 }
 
 func concat(a, b int) int {
-	i, err := strconv.Atoi(fmt.Sprintf("%d%d", a, b))
-	if err != nil {
-		panic(err)
-	}
-	return i
+	length := shared.DigitLength(b)
+	mul := shared.Pow(10, length)
+	return a*mul + b
 }
 
 func generateZeroPaddedNumericStrings(length, base int) []string {
@@ -125,4 +122,28 @@ func generateZeroPaddedNumericStrings(length, base int) []string {
 		strs = append(strs, s)
 	}
 	return strs
+}
+
+type permutationSpec struct {
+	length int
+	base   int
+}
+
+type permutationGenerator struct {
+	m map[permutationSpec][][]int
+}
+
+func newPermutationGenerator() *permutationGenerator {
+	return &permutationGenerator{
+		m: map[permutationSpec][][]int{},
+	}
+}
+
+func (v *permutationGenerator) generate(spec permutationSpec) [][]int {
+	if existing, exists := v.m[spec]; exists {
+		return existing
+	}
+	perm := generatePermutations(spec.length, spec.base)
+	v.m[spec] = perm
+	return perm
 }

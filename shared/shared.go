@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -540,4 +541,15 @@ func OrPanic2[T any](value T, err error) func(msg string) T {
 		Logger.Error("Expected nil error. Got !nil so panicking.", "message", msg, "err", err)
 		panic(msg)
 	}
+}
+
+func DigitLength(i int) int {
+	if i < 0 {
+		Logger.Error("Invalid value for DigitLength. Must be >=0.", "value", i)
+		panic("Invalid value for DigitLength.")
+	}
+	if i == 0 {
+		return 1
+	}
+	return int(math.Log10(float64(i))) + 1
 }

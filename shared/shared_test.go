@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,4 +37,22 @@ func TestToColumns(t *testing.T) {
 	run("empty", []string{}, nil, nil)
 	run("space", []string{"abc efg"}, []string{"abc"}, []string{"efg"})
 	run("two spaces", []string{"313  666"}, []string{"313"}, []string{"666"})
+}
+
+func TestDigitLength(t *testing.T) {
+	run := func(i, expected int) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			InitTestLogging(t)
+			req := require.New(t)
+			actual := DigitLength(i)
+			req.Equal(expected, actual)
+		})
+	}
+
+	run(0, 1)
+	run(1, 1)
+	run(10, 2)
+	run(19, 2)
+	run(999, 3)
+	run(1000, 4)
 }

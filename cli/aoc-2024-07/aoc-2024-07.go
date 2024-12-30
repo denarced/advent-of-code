@@ -13,12 +13,9 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-07.txt")
-	shared.Die(err, "open file")
+	file := shared.OrPanic2(os.Open("data/2024-07.txt"))("open input file")
 	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
+	lines := shared.OrPanic2(shared.ReadLines(file))("ReadLines")
 
 	fmt.Println("Calibration sums:")
 	tab := strings.Repeat(" ", 3)

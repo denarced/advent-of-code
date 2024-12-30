@@ -74,6 +74,18 @@ func TestGeneratePermutations(t *testing.T) {
 }
 
 func TestConcat(t *testing.T) {
-	shared.InitTestLogging(t)
-	require.Equal(t, 149910, concat(1499, 10))
+	run := func(expected, first, second int) {
+		name := fmt.Sprintf("%d=%d+%d", expected, first, second)
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			actual := concat(first, second)
+			req.Equal(expected, actual)
+		})
+	}
+
+	run(149910, 1499, 10)
+	run(10, 1, 0)
+	run(10_000, 1_000, 0)
+	run(999, 0, 999)
 }
