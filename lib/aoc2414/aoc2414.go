@@ -22,16 +22,29 @@ func DeriveSafetyFactor(lines []string, width, height, steps int) int {
 
 func FindChristmasTree(lines []string, width, height int) int {
 	ints := parseLines(lines)
+	minimumNeighbourCount := 20
 	for i := 1; i < 1_000_000; i++ {
-		coords := [][]int{}
-		for _, each := range ints {
+		yToCoords := make(map[int][]int, height)
+		skip := true
+		for j, each := range ints {
 			x, y := deriveCoordinates(each, width, height, i)
-			coords = append(coords, []int{x, y})
+			xs := yToCoords[y]
+			if xs == nil {
+				xs = make([]int, 0, 20)
+			}
+			xs = append(xs, x)
+			yToCoords[y] = xs
+			if j >= minimumNeighbourCount && minimumNeighbourCount <= len(xs) {
+				skip = false
+			}
 		}
 
-		count := countNeighbours(coords)
-		if count >= 20 {
-			// printBoard(coords, width, height)
+		if skip {
+			continue
+		}
+
+		count := countNeighbours(yToCoords, minimumNeighbourCount)
+		if count >= minimumNeighbourCount {
 			return i
 		}
 	}
@@ -47,19 +60,10 @@ func multiply(values []int) int {
 }
 
 func deriveCoordinates(specs []int, width, height, steps int) (x int, y int) {
-	local := append([]int{}, specs...)
-	local[0] += steps * local[2]
-	local[1] += steps * local[3]
-	x = (local[0]%width + width) % width
-	y = (local[1]%height + height) % height
-	shared.Logger.Debug(
-		"Outcome.",
-		"local", local,
-		"width", width,
-		"height", height,
-		"steps", steps,
-		"x", x,
-		"y", y)
+	a := specs[0] + steps*specs[2]
+	b := specs[1] + steps*specs[3]
+	x = (a%width + width) % width
+	y = (b%height + height) % height
 	return
 }
 
@@ -83,8 +87,9 @@ func deriveQuadrant(x, y, width, height int) int {
 }
 
 func parseLines(lines []string) [][]int {
-	result := [][]int{}
+	result := make([][]int, 0, len(lines))
 	for _, each := range lines {
+		// E.g. "p=98,97 v=25,80" -> "p=98,97" and "v=25,80".
 		p, v := splitPair(each, " ")
 		if p == "" {
 			continue
@@ -126,19 +131,12 @@ func splitPair(s, sep string) (first string, second string) {
 	return
 }
 
-func countNeighbours(line [][]int) int {
-	m := map[int][]int{}
-	for _, each := range line {
-		if xSet, exists := m[each[1]]; exists {
-			xSet = append(xSet, each[0])
-			m[each[1]] = xSet
-		} else {
-			m[each[1]] = []int{each[0]}
-		}
-	}
-
+func countNeighbours(m map[int][]int, minimum int) int {
 	highest := 0
 	for _, xSet := range m {
+		if len(xSet) < minimum {
+			continue
+		}
 		sort.Ints(xSet)
 		previous := -1
 		count := 0
@@ -151,6 +149,9 @@ func countNeighbours(line [][]int) int {
 				count++
 			}
 			previous = each
+		}
+		if count >= minimum {
+			return count
 		}
 		highest = shared.Max(highest, count)
 	}

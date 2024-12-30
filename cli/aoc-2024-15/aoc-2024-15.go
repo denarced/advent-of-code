@@ -12,12 +12,9 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-15.txt")
-	shared.Die(err, "open file")
+	file := shared.OrPanic2(os.Open("data/2024-15.txt"))("open input file")
 	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
+	lines := shared.OrPanic2(shared.ReadLines(file))("ReadLines")
 
 	fmt.Printf("Sum of GPS coordinates:\n")
 	fmt.Printf("    Single: %d\n", aoc2415.CountCoordinateSum(lines, false))
