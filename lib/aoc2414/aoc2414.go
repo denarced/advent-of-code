@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
 )
@@ -23,7 +24,48 @@ func DeriveSafetyFactor(lines []string, width, height, steps int) int {
 func FindChristmasTree(lines []string, width, height int) int {
 	ints := parseLines(lines)
 	minimumNeighbourCount := 20
-	for i := 1; i < 1_000_000; i++ {
+	// Based on quick testing with hyperfine, there's not much benefit in having more threads than
+	// 8. There's some but not much so using a conservative value here.
+	threadCount := 8
+	feedCh := make(chan int, threadCount)
+	resultCh := make(chan int)
+	foundCh := make(chan int)
+	found := -1
+	go func() {
+		for each := range resultCh {
+			if found == -1 {
+				found = each
+			} else {
+				found = shared.Min(found, each)
+			}
+		}
+		foundCh <- found
+	}()
+	var wg sync.WaitGroup
+	for range threadCount {
+		wg.Add(1)
+		go countNeighboursAtStep(ints, width, height, minimumNeighbourCount, feedCh, resultCh, &wg)
+	}
+	for i := 1; i < 1_000_000 && found < 0; i++ {
+		feedCh <- i
+	}
+	close(feedCh)
+	wg.Wait()
+	close(resultCh)
+	return <-foundCh
+}
+
+func countNeighboursAtStep(
+	ints [][]int,
+	width,
+	height,
+	minimumNeighbourCount int,
+	in <-chan int,
+	out chan<- int,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+	for i := range in {
 		yToCoords := make(map[int][]int, height)
 		skip := true
 		for j, each := range ints {
@@ -45,10 +87,9 @@ func FindChristmasTree(lines []string, width, height int) int {
 
 		count := countNeighbours(yToCoords, minimumNeighbourCount)
 		if count >= minimumNeighbourCount {
-			return i
+			out <- i
 		}
 	}
-	return -1
 }
 
 func multiply(values []int) int {
