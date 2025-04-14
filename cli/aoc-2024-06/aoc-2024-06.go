@@ -6,15 +6,16 @@ import (
 
 	"github.com/denarced/advent-of-code/lib/aoc2406"
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file := shared.OrPanic2(os.Open("data/2024-06.txt"))("open input file")
+	file := gent.OrPanic2(os.Open("data/2024-06.txt"))("open input file")
 	defer file.Close()
-	lines := shared.OrPanic2(shared.ReadLines(file))("read lines")
+	lines := gent.OrPanic2(shared.ReadLines(file))("read lines")
 
 	fmt.Println("Distinct positions:", aoc2406.CountDistinctPositions(lines))
 	fmt.Println(

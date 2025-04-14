@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 type deque struct {
@@ -174,7 +175,7 @@ func visualize(org []atom) string {
 }
 
 func toAtoms(s string) []atom {
-	ints := shared.OrPanic2(shared.ToInts(strings.Split(s, "")))("to ints")
+	ints := gent.OrPanic2(shared.ToInts(strings.Split(s, "")))("to ints")
 	org := []atom{}
 	for i, each := range ints {
 		id := 0

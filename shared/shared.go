@@ -456,16 +456,6 @@ func ParseIntOrDie(s string) int {
 	return i
 }
 
-func OrPanic2[T any](value T, err error) func(msg string) T {
-	return func(msg string) T {
-		if err == nil {
-			return value
-		}
-		Logger.Error("Expected nil error. Got !nil so panicking.", "message", msg, "err", err)
-		panic(msg)
-	}
-}
-
 func DigitLength(i int) int {
 	if i < 0 {
 		Logger.Error("Invalid value for DigitLength. Must be >=0.", "value", i)
