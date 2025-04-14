@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func DeriveCalibrationSum(lines []string, withConcat bool) int {
@@ -29,8 +30,8 @@ type calibrationDto struct {
 }
 
 func toCalibrationDtos(lines []string) []calibrationDto {
-	trimmed := shared.FilterValues(
-		shared.MapValues(
+	trimmed := gent.Filter(
+		gent.Map(
 			lines,
 			func(s string) string {
 				return strings.TrimSpace(s)
@@ -38,10 +39,10 @@ func toCalibrationDtos(lines []string) []calibrationDto {
 		func(s string) bool {
 			return s != ""
 		})
-	return shared.MapValues(
+	return gent.Map(
 		trimmed,
 		func(s string) calibrationDto {
-			sides := shared.MapValues(
+			sides := gent.Map(
 				strings.Split(s, ":"),
 				func(s string) string {
 					return strings.TrimSpace(s)
@@ -93,7 +94,7 @@ func deriveSum(dto calibrationDto, operators []int) int {
 
 func generatePermutations(length, base int) [][]int {
 	strs := generateZeroPaddedNumericStrings(length, base)
-	return shared.MapValues(
+	return gent.Map(
 		strs,
 		func(s string) []int {
 			nums, err := shared.ToInts(strings.Split(s, ""))
@@ -113,7 +114,7 @@ func concat(a, b int) int {
 func generateZeroPaddedNumericStrings(length, base int) []string {
 	max := shared.Pow(base, length)
 	strs := make([]string, 0, max)
-	for i := 0; i < max; i++ {
+	for i := range max {
 		s := strconv.FormatInt(int64(i), base)
 		missing := length - len(s)
 		if missing > 0 {

@@ -132,65 +132,6 @@ func trim(s []string) (trimmed []string) {
 	return
 }
 
-type Set[T comparable] struct {
-	m map[T]int
-}
-
-func NewSet[T comparable](s []T) *Set[T] {
-	m := map[T]int{}
-	for _, each := range s {
-		m[each] = 0
-	}
-	return &Set[T]{m: m}
-}
-
-func (v *Set[T]) Add(item T) {
-	v.m[item] = 0
-}
-
-func (v *Set[T]) Remove(item T) {
-	delete(v.m, item)
-}
-
-func (v *Set[T]) Has(item T) bool {
-	_, ok := v.m[item]
-	return ok
-}
-
-func (v *Set[T]) Count() int {
-	return len(v.m)
-}
-
-func (v *Set[T]) Copy() *Set[T] {
-	m := make(map[T]int, len(v.m))
-	for key, val := range v.m {
-		m[key] = val
-	}
-	return &Set[T]{
-		m: m,
-	}
-}
-
-func (v *Set[T]) Iter(cb func(item T) bool) {
-	for each := range v.m {
-		if !cb(each) {
-			break
-		}
-	}
-}
-
-func (v *Set[T]) ToSlice() []T {
-	s := make([]T, 0, len(v.m))
-	for each := range v.m {
-		s = append(s, each)
-	}
-	return s
-}
-
-func (v *Set[T]) Clear() {
-	v.m = map[T]int{}
-}
-
 type number interface {
 	uint | uint8 | uint16 | uint32 | uint64 | int | int8 | int16 | int32 | int64 | float32 | float64
 }
@@ -309,24 +250,6 @@ func ToInts(s []string) (nums []int, err error) {
 	return
 }
 
-func MapValues[T any, U any](s []T, f func(v T) U) []U {
-	var result []U
-	for _, each := range s {
-		result = append(result, f(each))
-	}
-	return result
-}
-
-func FilterValues[T any](s []T, f func(v T) bool) []T {
-	var result []T
-	for _, each := range s {
-		if f(each) {
-			result = append(result, each)
-		}
-	}
-	return result
-}
-
 func StripPadding(lines []string) []string {
 	stripped := make([]string, 0, len(lines))
 	for _, each := range lines {
@@ -355,7 +278,7 @@ func NewBoard(lines []string) *Board {
 func createGrid(lines []string) [][]rune {
 	grid := make([][]rune, len(lines))
 	lineCount := len(lines)
-	for y := 0; y < lineCount; y++ {
+	for y := range lineCount {
 		line := lines[Abs(y-lineCount+1)]
 		grid[y] = []rune(line)
 	}
@@ -372,9 +295,9 @@ func createGrid(lines []string) [][]rune {
 type BoardIterCb func(loc Loc, c rune) bool
 
 func (v *Board) Iter(cb BoardIterCb) {
-	for y := 0; y < len(v.grid); y++ {
+	for y := range len(v.grid) {
 		width := len(v.grid[y])
-		for x := 0; x < width; x++ {
+		for x := range width {
 			if !cb(Loc{X: x, Y: y}, v.grid[y][x]) {
 				return
 			}

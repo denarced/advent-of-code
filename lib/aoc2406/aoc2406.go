@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 type vector struct {
@@ -15,16 +16,16 @@ type vector struct {
 
 type fatBoard struct {
 	curr      vector
-	visited   *shared.Set[vector]
-	stepped   *shared.Set[shared.Loc]
+	visited   *gent.Set[vector]
+	stepped   *gent.Set[shared.Loc]
 	nestedBrd *shared.Board
 }
 
 func newFatBoard(init vector, nestedBrd *shared.Board) *fatBoard {
 	return &fatBoard{
 		curr:      init,
-		visited:   shared.NewSet([]vector{init}),
-		stepped:   shared.NewSet([]shared.Loc{init.loc}),
+		visited:   gent.NewSet(init),
+		stepped:   gent.NewSet(init.loc),
 		nestedBrd: nestedBrd,
 	}
 }
@@ -77,7 +78,7 @@ func findIndefiniteBlock(
 	brd.nestedBrd.Set(possible, '#')
 	shared.Logger.Debug("Find-indef.", "curr", brd.curr)
 	turnCount := 0
-	for i := 0; i < 100*shared.Max(brd.nestedBrd.GetWidth(), brd.nestedBrd.GetHeight()); i++ {
+	for range 100 * shared.Max(brd.nestedBrd.GetWidth(), brd.nestedBrd.GetHeight()) {
 		if brd.visited.Has(brd.deriveNextVector()) {
 			shared.Logger.Info("Found block that causes indefinite loop.", "block", possible)
 			locCh <- possible
@@ -113,14 +114,13 @@ func (v *fatBoard) deriveVisitedCount() int {
 
 func (v *fatBoard) print() string {
 	locToDirs := map[shared.Loc][]shared.Direction{}
-	v.visited.Iter(func(v vector) bool {
+	v.visited.ForEachAll(func(v vector) {
 		l := v.loc
 		if dirs, ok := locToDirs[l]; ok {
 			locToDirs[l] = append(dirs, v.dir)
 		} else {
 			locToDirs[l] = []shared.Direction{v.dir}
 		}
-		return true
 	})
 	for loc, dirs := range locToDirs {
 		v.nestedBrd.Set(loc, deriveDirCharacter(dirs))
@@ -161,14 +161,14 @@ func CountDistinctPositions(lines []string) int {
 	return fatBrd.deriveVisitedCount()
 }
 
-func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
+func CountBlocksForIndefiniteLoops(lines []string) *gent.Set[shared.Loc] {
 	if len(lines) == 0 {
-		return shared.NewSet([]shared.Loc{})
+		return gent.NewSet[shared.Loc]()
 	}
 	shared.Logger.Info("Derive infinite loop locations.")
 	nested := shared.NewBoard(lines)
 	brd := newFatBoard(vector{loc: nested.FindOrDie('^'), dir: shared.RealNorth}, nested)
-	indefLocations := shared.NewSet([]shared.Loc{})
+	indefLocations := gent.NewSet[shared.Loc]()
 	locCh := make(chan shared.Loc)
 	finishedCh := make(chan int)
 	go func() {
@@ -206,7 +206,7 @@ func CountBlocksForIndefiniteLoops(lines []string) *shared.Set[shared.Loc] {
 
 func deriveDirCharacter(dirs []shared.Direction) rune {
 	hor, ver := false, false
-	shared.NewSet(dirs).Iter(func(d shared.Direction) bool {
+	gent.NewSet(dirs...).ForEachAll(func(d shared.Direction) {
 		if d.X == 0 && d.Y != 0 {
 			ver = true
 		} else if d.X != 0 && d.Y == 0 {
@@ -214,7 +214,6 @@ func deriveDirCharacter(dirs []shared.Direction) rune {
 		} else {
 			panic(fmt.Sprintf("Only horizontal or vertical are allowed: %v.", d))
 		}
-		return true
 	})
 	if hor && !ver {
 		return '-'

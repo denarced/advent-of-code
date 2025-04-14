@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func CountCoordinateSum(lines []string, doubled bool) int {
@@ -225,7 +226,7 @@ func findBoxLayers(brd *shared.Board, start, delta shared.Loc) [][]shared.Loc {
 	layers := [][]shared.Loc{first}
 	current := first
 	for {
-		unique := shared.FilterValues(
+		unique := gent.Filter(
 			deriveUniqueDeltaLocations(current, delta),
 			func(loc shared.Loc) bool {
 				c, ok := brd.Get(loc)
@@ -237,7 +238,7 @@ func findBoxLayers(brd *shared.Board, start, delta shared.Loc) [][]shared.Loc {
 		if len(unique) == 0 {
 			break
 		}
-		candidate := shared.NewSet([]shared.Loc{})
+		candidate := gent.NewSet[shared.Loc]()
 		for _, aUnique := range unique {
 			for _, member := range deriveBoxPair(brd, aUnique) {
 				candidate.Add(member)
@@ -260,7 +261,7 @@ func findBoxLayers(brd *shared.Board, start, delta shared.Loc) [][]shared.Loc {
 }
 
 func deriveUniqueDeltaLocations(locs []shared.Loc, delta shared.Loc) []shared.Loc {
-	unique := shared.NewSet([]shared.Loc{})
+	unique := gent.NewSet[shared.Loc]()
 	for _, each := range locs {
 		unique.Add(each.Delta(delta))
 	}
@@ -335,7 +336,7 @@ func checkOverlap(brd *shared.Board, layers [][]shared.Loc, delta shared.Loc) bo
 }
 
 func deriveFront(layers [][]shared.Loc, delta shared.Loc) []shared.Loc {
-	allLocs := shared.NewSet([]shared.Loc{})
+	allLocs := gent.NewSet[shared.Loc]()
 	for _, outer := range layers {
 		for _, inner := range outer {
 			allLocs.Add(inner)

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,14 +98,14 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 		name string,
 		lines []string,
 		harmonics bool,
-		expected *shared.Set[shared.Loc]) {
+		expected *gent.Set[shared.Loc]) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			shared.DiffLocSets(t, expected, deriveUniqueAntinodeLocations(lines, harmonics))
 		})
 	}
 
-	run("empty wo harmonics", []string{}, false, shared.NewSet([]shared.Loc{}))
+	run("empty wo harmonics", []string{}, false, gent.NewSet[shared.Loc]())
 	run(
 		"minimal with harmonics",
 		shared.StripPadding([]string{
@@ -121,7 +122,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 			//       0 1 2 3 4 5 6 7 8 9
 		}),
 		true,
-		shared.NewSet([]shared.Loc{
+		gent.NewSet([]shared.Loc{
 			{X: 0, Y: 0}, // 0
 			{X: 0, Y: 2}, // 3
 			{X: 1, Y: 3}, // 3
@@ -145,7 +146,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 			{X: 8, Y: 4}, // 2
 			{X: 8, Y: 8}, // 0
 			{X: 9, Y: 6}, // 2
-		}))
+		}...))
 	// b # # . . . . # . . . . #
 	// a . # . # . . . . 0 . . .
 	// 9 . . # . # 0 . . . . # .
@@ -163,7 +164,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 		"example",
 		getExampleLines(),
 		true,
-		shared.NewSet([]shared.Loc{
+		gent.NewSet([]shared.Loc{
 			{X: 0, Y: 11},
 			{X: 0, Y: 4},
 			{X: 1, Y: 10},
@@ -198,7 +199,7 @@ func TestDeriveUniqueAntiNodeLocations(t *testing.T) {
 			{X: 8, Y: 3},
 			{X: 9, Y: 2},
 			{X: 9, Y: 7},
-		}))
+		}...))
 }
 
 func TestIsAntenna(t *testing.T) {

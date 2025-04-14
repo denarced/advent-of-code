@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -331,7 +332,7 @@ func compareLocationTables(t *testing.T, a, b [][]shared.Loc) {
 	stringify := func(table [][]shared.Loc) [][]string {
 		s := [][]string{}
 		for _, each := range table {
-			line := shared.MapValues(
+			line := gent.Map(
 				each,
 				func(l shared.Loc) string {
 					return l.ToString()
@@ -356,8 +357,8 @@ func TestSortFences(t *testing.T) {
 			actual := sortFences(unsorted)
 			// VERIFY
 			req.ElementsMatch(
-				shared.MapValues(expected, stringifyFatties),
-				shared.MapValues(actual, stringifyFatties),
+				gent.Map(expected, stringifyFatties),
+				gent.Map(actual, stringifyFatties),
 			)
 		})
 	}

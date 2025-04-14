@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func CountUniqueAntinodeLocations(lines []string, resonantHarmonics bool) int {
@@ -17,8 +18,8 @@ func CountUniqueAntinodeLocations(lines []string, resonantHarmonics bool) int {
 	return deriveUniqueAntinodeLocations(lines, resonantHarmonics).Count()
 }
 
-func deriveUniqueAntinodeLocations(lines []string, resonantHarmonics bool) *shared.Set[shared.Loc] {
-	antinodes := shared.NewSet([]shared.Loc{})
+func deriveUniqueAntinodeLocations(lines []string, resonantHarmonics bool) *gent.Set[shared.Loc] {
+	antinodes := gent.NewSet[shared.Loc]()
 	if len(lines) == 0 {
 		return antinodes
 	}
@@ -75,8 +76,8 @@ func isAntenna(c rune) bool {
 func createPermutations(locs []shared.Loc) [][]shared.Loc {
 	perms := [][]shared.Loc{}
 	length := len(locs)
-	for i := 0; i < length; i++ {
-		for j := 0; j < length; j++ {
+	for i := range length {
+		for j := range length {
 			if i == j {
 				continue
 			}

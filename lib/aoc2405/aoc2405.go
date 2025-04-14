@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func SumCorrectMiddlePageNumbers(lines []string) int {
@@ -28,7 +29,7 @@ func sumMiddlePageNumbers(lines []string, correct bool) int {
 		correct,
 	)
 	sum := 0
-	filtered := shared.FilterValues(
+	filtered := gent.Filter(
 		pages,
 		func(s []int) bool {
 			return isSortedAccordingToRules(rules, s) == correct
@@ -72,9 +73,9 @@ func toRulesAndPages(lines []string) ([][]int, [][]int) {
 		}
 	}
 	filterAndSplit := func(sep string) [][]int {
-		return shared.MapValues(
-			shared.MapValues(
-				shared.FilterValues(lines, contains(sep)),
+		return gent.Map(
+			gent.Map(
+				gent.Filter(lines, contains(sep)),
 				split(sep)),
 			toInts)
 	}

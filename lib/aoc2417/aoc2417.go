@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 const (
@@ -30,7 +31,7 @@ func DeriveOutput(lines []string) string {
 	runBatch(cpu)
 	shared.Logger.Info("Ints in output.", "ints", cpu.output)
 	return strings.Join(
-		shared.MapValues(
+		gent.Map(
 			cpu.output,
 			func(i int) string {
 				return strconv.Itoa(i)

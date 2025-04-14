@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 const (
@@ -69,7 +70,7 @@ func CountLowestScore(lines []string, drawWinners bool) (minPoints int, seatCoun
 		"min score",
 		minPoints,
 	)
-	bestSeats := shared.NewSet([]shared.Loc{})
+	bestSeats := gent.NewSet[shared.Loc]()
 	for _, winner := range winners {
 		if drawWinners {
 			draw(lines, winner.steps)
@@ -165,7 +166,7 @@ func getPossibleVectors(
 
 func getPossibleDirections(all []shared.Direction, dir shared.Direction) []shared.Direction {
 	rev := shared.Direction{X: -dir.X, Y: -dir.Y}
-	return shared.FilterValues(all, func(dir shared.Direction) bool {
+	return gent.Filter(all, func(dir shared.Direction) bool {
 		return dir != rev
 	})
 }

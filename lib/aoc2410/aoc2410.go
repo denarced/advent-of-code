@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 func DeriveSumOfTrailheadScores(lines []string, ratings bool) int {
@@ -14,7 +15,7 @@ func DeriveSumOfTrailheadScores(lines []string, ratings bool) int {
 	ch := make(chan trail)
 	resCh := make(chan int)
 	go func() {
-		trails := shared.NewSet([]trail{})
+		trails := gent.NewSet[trail]()
 		count := 0
 		for each := range ch {
 			trails.Add(each)

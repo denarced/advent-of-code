@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,7 +98,7 @@ func straight06Lines() []string {
 	)
 }
 
-func extractExpected(lines []string) *shared.Set[shared.Loc] {
+func extractExpected(lines []string) *gent.Set[shared.Loc] {
 	locations := []shared.Loc{}
 	for y := 0; y < len(lines); y++ {
 		for x := 0; x < len(lines[y]); x++ {
@@ -107,7 +108,7 @@ func extractExpected(lines []string) *shared.Set[shared.Loc] {
 			}
 		}
 	}
-	return shared.NewSet(locations)
+	return gent.NewSet(locations...)
 }
 
 func square06Lines() []string {
@@ -225,7 +226,7 @@ func TestBoardCopy(t *testing.T) {
 	req.Equal(vector{dir: shared.RealNorth}, orig.curr, "curr")
 	req.Equal('.', orig.nestedBrd.GetOrDie(blockLoc), "changed block")
 	req.Equal(
-		shared.NewSet([]vector{{dir: shared.RealNorth}}),
+		gent.NewSet(vector{dir: shared.RealNorth}),
 		orig.visited,
 		"visited")
 }
@@ -371,7 +372,7 @@ func newTestBoard(
 ) *fatBoard {
 	fatBoard := newFatBoard(vector{loc: curr, dir: shared.RealNorth}, shared.NewBoard(lines))
 	if visited != nil {
-		fatBoard.visited = shared.NewSet(visited)
+		fatBoard.visited = gent.NewSet(visited...)
 	}
 	return fatBoard
 }

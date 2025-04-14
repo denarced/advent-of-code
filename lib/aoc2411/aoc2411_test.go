@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 	"github.com/stretchr/testify/require"
 )
 
@@ -83,7 +84,7 @@ func TestWalkIntoStones(t *testing.T) {
 }
 
 func joinInts(s []int, sep string) string {
-	strs := shared.MapValues(
+	strs := gent.Map(
 		s,
 		func(i int) string {
 			return strconv.Itoa(i)
