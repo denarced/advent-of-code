@@ -18,7 +18,7 @@ func main() {
 	lines := gent.OrPanic2(shared.ReadLines(file))("ReadLines")
 
 	score, seatCount := aoc2416.CountLowestScore(lines, false)
-	fmt.Printf("Result:\n")
+	fmt.Println("Result:")
 	fmt.Printf("    Score:      %d\n", score)
 	fmt.Printf("    Seat count: %d\n", seatCount)
 
