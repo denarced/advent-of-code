@@ -11,8 +11,9 @@ import (
 
 var (
 	// Logger is the logger for the app.
-	Logger *slog.Logger
-	done   bool
+	Logger       *slog.Logger
+	done         bool
+	debugEnabled bool
 )
 
 func deriveLoggingLevel() slog.Level {
@@ -54,6 +55,7 @@ func initLogger(writer io.Writer, level slog.Level) {
 	options := &slog.HandlerOptions{Level: level}
 	Logger = slog.New(slog.NewTextHandler(writer, options))
 	done = true
+	debugEnabled = level == slog.LevelDebug
 }
 
 type testWriter struct {
@@ -63,4 +65,8 @@ type testWriter struct {
 func (w testWriter) Write(p []byte) (n int, err error) {
 	w.tb.Log(string(p))
 	return len(p), nil
+}
+
+func IsDebugEnabled() bool {
+	return debugEnabled
 }
