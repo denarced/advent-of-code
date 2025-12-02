@@ -11,6 +11,7 @@ import (
 
 func SumInvalidIDs(line string, twice bool) int64 {
 	var sum int64
+	shared.Logger.Info("Derive sum of invalid IDs.", "twice", twice)
 	for _, each := range splitToRanges(line) {
 		for n := each.from; n <= each.to; n++ {
 			maxSplit := 2
@@ -18,10 +19,12 @@ func SumInvalidIDs(line string, twice bool) int64 {
 				maxSplit = len(strconv.FormatInt(n, 10))
 			}
 			if breaks(n, 2, maxSplit) {
+				shared.Logger.Info("Invalid ID found.", "ID", n)
 				sum += n
 			}
 		}
 	}
+	shared.Logger.Info("Sum calculated.", "sum", sum)
 	return sum
 }
 
@@ -30,7 +33,6 @@ func breaks(n int64, minSplit, maxSplit int) bool {
 		return false
 	}
 	s := strconv.FormatInt(n, 10)
-	shared.Logger.Info("Check if breaks.", "n", n, "min", minSplit, "max", maxSplit)
 	for i := minSplit; i <= maxSplit; i++ {
 		length := len(s)
 		if i > length {
@@ -47,10 +49,15 @@ func breaks(n int64, minSplit, maxSplit int) bool {
 		}
 
 		if allEqual(splitString(s, i)) {
+			if shared.IsDebugEnabled() {
+				shared.Logger.Debug("Breaks.", "n", n, "split count", i)
+			}
 			return true
 		}
 	}
-	shared.Logger.Info("Doesn't break.", "n", n, "min", minSplit, "max", maxSplit)
+	if shared.IsDebugEnabled() {
+		shared.Logger.Debug("Doesn't break.", "n", n, "min", minSplit, "max", maxSplit)
+	}
 	return false
 }
 
