@@ -51,6 +51,10 @@ func InitTestLogging(tb testing.TB) {
 	initLogger(&testWriter{tb: tb}, slog.LevelDebug)
 }
 
+func InitNullLogging() {
+	initLogger(io.Discard, slog.LevelInfo)
+}
+
 func initLogger(writer io.Writer, level slog.Level) {
 	options := &slog.HandlerOptions{Level: level}
 	Logger = slog.New(slog.NewTextHandler(writer, options))

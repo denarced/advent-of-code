@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDo(t *testing.T) {
+func TestDeriveMaxJoltageSum(t *testing.T) {
 	readLines := func(req *require.Assertions) []string {
 		f, err := os.Open("testdata/in.txt")
 		req.NoError(err, "failed to open test data file")
@@ -19,14 +19,14 @@ func TestDo(t *testing.T) {
 	}
 
 	t.Run("2", func(t *testing.T) {
-		shared.InitTestLogging(t)
+		shared.InitNullLogging()
 		req := require.New(t)
 		// EXERCISE
 		req.Equal(int64(357), DeriveMaxJoltageSum(readLines(req), 2))
 	})
 
 	t.Run("12", func(t *testing.T) {
-		shared.InitTestLogging(t)
+		shared.InitNullLogging()
 		req := require.New(t)
 		// EXERCISE
 		req.Equal(int64(3121910778619), DeriveMaxJoltageSum(readLines(req), 12))

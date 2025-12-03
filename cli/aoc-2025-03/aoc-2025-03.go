@@ -20,7 +20,7 @@ func main() {
 	shared.Die(err, "ReadLines")
 
 	fmt.Println("Maximum joltage sum:")
-	fmt.Printf("    2 batteries:  %d\n", aoc2503.DeriveMaxJoltageSum(lines, 2))
+	fmt.Printf("     2 batteries: %d\n", aoc2503.DeriveMaxJoltageSum(lines, 2))
 	fmt.Printf("    12 batteries: %d\n", aoc2503.DeriveMaxJoltageSum(lines, 12))
 	shared.Logger.Info("Done.")
 }

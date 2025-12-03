@@ -2,11 +2,9 @@ package aoc2503
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
-	"github.com/denarced/gent"
 )
 
 func DeriveMaxJoltageSum(lines []string, count int) int64 {
@@ -49,11 +47,7 @@ func deriveMaxJoltage(bank []int, count int) int64 {
 			maxMajor = d
 			maxJoltage = 0
 			rest := deriveMaxJoltage(bank[i+1:], count-1)
-			cand := gent.OrPanic2(
-				strconv.ParseInt(fmt.Sprintf("%d%d", d, rest), 10, 64),
-			)(
-				"combine numbers",
-			)
+			cand := appendInts(d, rest)
 			if shared.IsDebugEnabled() {
 				shared.Logger.Debug("Candidate.", "candidate", cand, "rest", rest)
 			}
@@ -84,4 +78,12 @@ func toBanks(lines []string) [][]int {
 		}
 	}
 	return banks
+}
+
+func appendInts(a, b int64) int64 {
+	var m int64 = 1
+	for temp := b; temp > 0; temp /= 10 {
+		m *= 10
+	}
+	return a*m + b
 }
