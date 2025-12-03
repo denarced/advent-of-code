@@ -3,6 +3,7 @@ package aoc2503
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
 	"github.com/denarced/gent"
@@ -11,11 +12,17 @@ import (
 func DeriveMaxJoltageSum(lines []string, count int) int64 {
 	banks := toBanks(lines)
 	var sum int64
+	var wg sync.WaitGroup
 	for _, each := range banks {
-		joltage := deriveMaxJoltage(each, count)
-		sum += joltage
-		shared.Logger.Info("Bank processed.", "bank", each, "joltage", joltage, "sum", sum)
+		wg.Add(1)
+		go func(bank []int) {
+			defer wg.Done()
+			joltage := deriveMaxJoltage(bank, count)
+			sum += joltage
+			shared.Logger.Info("Bank processed.", "bank", bank, "joltage", joltage, "sum", sum)
+		}(each)
 	}
+	wg.Wait()
 	return sum
 }
 
@@ -55,7 +62,6 @@ func deriveMaxJoltage(bank []int, count int) int64 {
 			}
 		}
 	}
-	shared.Logger.Info("Max joltage derived.", "joltage", maxJoltage, "major", maxMajor)
 	if maxJoltage > 0 {
 		return maxJoltage
 	}
