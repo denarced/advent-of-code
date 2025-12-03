@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/denarced/advent-of-code/shared"
 	"github.com/denarced/gent"
@@ -12,18 +13,24 @@ import (
 func SumInvalidIDs(line string, twice bool) int64 {
 	var sum int64
 	shared.Logger.Info("Derive sum of invalid IDs.", "twice", twice)
+	var wg sync.WaitGroup
 	for _, each := range splitToRanges(line) {
-		for n := each.from; n <= each.to; n++ {
-			maxSplit := 2
-			if !twice {
-				maxSplit = len(strconv.FormatInt(n, 10))
+		wg.Add(1)
+		go func(intr intRange) {
+			defer wg.Done()
+			for n := intr.from; n <= intr.to; n++ {
+				maxSplit := 2
+				if !twice {
+					maxSplit = deriveIntLength(n)
+				}
+				if breaks(n, 2, maxSplit) {
+					shared.Logger.Info("Invalid ID found.", "ID", n)
+					sum += n
+				}
 			}
-			if breaks(n, 2, maxSplit) {
-				shared.Logger.Info("Invalid ID found.", "ID", n)
-				sum += n
-			}
-		}
+		}(each)
 	}
+	wg.Wait()
 	shared.Logger.Info("Sum calculated.", "sum", sum)
 	return sum
 }
@@ -108,4 +115,16 @@ func splitToRanges(line string) []intRange {
 		ranges = append(ranges, r)
 	}
 	return ranges
+}
+
+func deriveIntLength(n int64) int {
+	if n == 0 {
+		return 1
+	}
+	length := 0
+	for n > 0 {
+		n /= 10
+		length++
+	}
+	return length
 }
