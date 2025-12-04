@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/denarced/advent-of-code/lib/aoc2411"
@@ -14,9 +13,7 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file := gent.OrPanic2(os.Open("data/2024-11.txt"))("open file")
-	defer file.Close()
-	lines := gent.OrPanic2(shared.ReadLines(file))("ReadLines")
+	lines := gent.OrPanic2(shared.ReadLinesFromFile("data/2024-11.txt"))("ReadLinesFromFile")
 	stones := gent.OrPanic2(shared.ToInts(strings.Fields(lines[0])))("ToInts")
 	fmt.Println("Stone count:")
 	for i := 25; i < 100; i += 50 {

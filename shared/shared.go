@@ -80,23 +80,16 @@ func Or[T any](o bool, yes, no T) T {
 	return no
 }
 
-func ReadAll(reader io.Reader) (s string, err error) {
-	Logger.Info("Read all.")
-
-	var b []byte
-	b, err = io.ReadAll(reader)
+func ReadLinesFromFile(filep string) (lines []string, err error) {
+	var f *os.File
+	f, err = os.Open(filep)
 	if err != nil {
 		return
 	}
-	s = string(b)
-	return
-}
-
-func ReadLines(reader io.Reader) (lines []string, err error) {
-	Logger.Info("Read lines.")
+	defer f.Close()
 
 	var b []byte
-	b, err = io.ReadAll(reader)
+	b, err = io.ReadAll(f)
 	if err != nil {
 		return
 	}

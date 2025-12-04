@@ -1,7 +1,6 @@
 package aoc2504
 
 import (
-	"os"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -13,10 +12,7 @@ func TestCountRolls(t *testing.T) {
 	shared.InitTestLogging(t)
 	req := require.New(t)
 
-	f, err := os.Open("testdata/in.txt")
-	req.NoError(err, "open file")
-	defer f.Close()
-	lines, err := shared.ReadLines(f)
+	lines, err := shared.ReadLinesFromFile("testdata/in.txt")
 	req.NoError(err, "read lines")
 
 	ass := assert.New(t)

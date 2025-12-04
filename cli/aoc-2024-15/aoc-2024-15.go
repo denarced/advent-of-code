@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/denarced/advent-of-code/lib/aoc2415"
 	"github.com/denarced/advent-of-code/shared"
@@ -13,9 +12,7 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file := gent.OrPanic2(os.Open("data/2024-15.txt"))("open input file")
-	defer file.Close()
-	lines := gent.OrPanic2(shared.ReadLines(file))("ReadLines")
+	lines := gent.OrPanic2(shared.ReadLinesFromFile("data/2024-15.txt"))("ReadLinesFromFile")
 
 	fmt.Printf("Sum of GPS coordinates:\n")
 	fmt.Printf("    Single: %d\n", aoc2415.CountCoordinateSum(lines, false))

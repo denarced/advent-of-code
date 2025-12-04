@@ -1,7 +1,6 @@
 package aoc2503
 
 import (
-	"os"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -10,10 +9,7 @@ import (
 
 func TestDeriveMaxJoltageSum(t *testing.T) {
 	readLines := func(req *require.Assertions) []string {
-		f, err := os.Open("testdata/in.txt")
-		req.NoError(err, "failed to open test data file")
-		defer f.Close()
-		lines, err := shared.ReadLines(f)
+		lines, err := shared.ReadLinesFromFile("testdata/in.txt")
 		req.NoError(err, "failed to read test data lines")
 		return lines
 	}

@@ -2,7 +2,6 @@ package aoc2502
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -11,10 +10,7 @@ import (
 
 func TestDo(t *testing.T) {
 	readTestData := func(req *require.Assertions) []string {
-		file, err := os.Open("testdata/in.txt")
-		req.NoError(err, "failed to open test file")
-		defer file.Close()
-		lines, err := shared.ReadLines(file)
+		lines, err := shared.ReadLinesFromFile("testdata/in.txt")
 		req.NoError(err, "failed to read lines")
 		return lines
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/denarced/advent-of-code/lib/aoc2408"
@@ -13,12 +12,8 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
-	file, err := os.Open("data/2024-08.txt")
-	shared.Die(err, "open file")
-	defer file.Close()
-
-	lines, err := shared.ReadLines(file)
-	shared.Die(err, "ReadLines")
+	lines, err := shared.ReadLinesFromFile("data/2024-08.txt")
+	shared.Die(err, "ReadLinesFromFile")
 
 	fmt.Println("Unique antinode location count:")
 	tab := strings.Repeat(" ", 3)
