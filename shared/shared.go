@@ -349,11 +349,14 @@ func (v *Board) Set(loc Loc, c rune) {
 	line[x] = c
 }
 
-func (v *Board) NextTo(loc Loc, c rune) []Loc {
+func (v *Board) NextTo(loc Loc, c rune, includeCorners bool) []Loc {
 	locs := []Loc{}
 	for _, xd := range []int{-1, 0, 1} {
 		for _, yd := range []int{-1, 0, 1} {
-			if xd == 0 && yd == 0 || xd != 0 && yd != 0 {
+			if xd == 0 && yd == 0 {
+				continue
+			}
+			if !includeCorners && xd != 0 && yd != 0 {
 				continue
 			}
 			near := Loc{X: loc.X + xd, Y: loc.Y + yd}

@@ -80,7 +80,7 @@ func crawl(brd *shared.Board, loc shared.Loc) []shared.Loc {
 		for len(last) > 0 {
 			nextLast := []shared.Loc{}
 			for _, latest := range last {
-				for _, each := range brd.NextTo(latest, c) {
+				for _, each := range brd.NextTo(latest, c, false) {
 					if _, exist := mapped[each]; exist {
 						continue
 					}
