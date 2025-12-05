@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,4 +47,12 @@ func TestBreaks(t *testing.T) {
 			require.Equal(t, tt.expected, breaks(tt.n, tt.minSplit, tt.maxSplit))
 		})
 	}
+}
+
+func TestSplitInt(t *testing.T) {
+	ass := assert.New(t)
+	ass.Equal([]int{0}, splitInt(0))
+	ass.Equal([]int{9}, splitInt(9))
+	ass.Equal([]int{1, 0}, splitInt(10))
+	ass.Equal([]int{1, 0, 1, 0, 1}, splitInt(10101))
 }

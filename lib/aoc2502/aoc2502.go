@@ -2,6 +2,7 @@ package aoc2502
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,9 +40,9 @@ func breaks(n int64, minSplit, maxSplit int) bool {
 	if n < 10 {
 		return false
 	}
-	s := strconv.FormatInt(n, 10)
+	pieces := splitInt(n)
 	for i := minSplit; i <= maxSplit; i++ {
-		length := len(s)
+		length := len(pieces)
 		if i > length {
 			break
 		}
@@ -55,7 +56,7 @@ func breaks(n int64, minSplit, maxSplit int) bool {
 			shared.Logger.Debug("Test split.", "piece count", i)
 		}
 
-		if allEqual(splitString(s, i)) {
+		if allIntsEqual(splitInts(pieces, i)) {
 			if shared.IsDebugEnabled() {
 				shared.Logger.Debug("Breaks.", "n", n, "split count", i)
 			}
@@ -66,31 +67,6 @@ func breaks(n int64, minSplit, maxSplit int) bool {
 		shared.Logger.Debug("Doesn't break.", "n", n, "min", minSplit, "max", maxSplit)
 	}
 	return false
-}
-
-func allEqual(s []string) bool {
-	if len(s) < 2 {
-		return false
-	}
-	first := s[0]
-	for _, each := range s[1:] {
-		if first != each {
-			return false
-		}
-	}
-	return true
-}
-
-func splitString(s string, n int) []string {
-	var pieces []string
-	inc := len(s) / n
-	for i := 0; i < len(s); i += inc {
-		pieces = append(pieces, s[i:i+inc])
-	}
-	if shared.IsDebugEnabled() {
-		shared.Logger.Debug("Result of string split.", "string", s, "n", n, "pieces", pieces)
-	}
-	return pieces
 }
 
 type intRange struct {
@@ -127,4 +103,41 @@ func deriveIntLength(n int64) int {
 		length++
 	}
 	return length
+}
+
+func splitInt(n int64) []int {
+	if n < 0 {
+		panic("negative number")
+	}
+	if n == 0 {
+		return []int{0}
+	}
+	var digits []int
+	for n > 0 {
+		digits = slices.Insert(digits, 0, int(n%10))
+		n /= 10
+	}
+	return digits
+}
+
+func splitInts(pieces []int, n int) [][]int {
+	var result [][]int
+	inc := len(pieces) / n
+	for i := 0; i < len(pieces); i += inc {
+		result = append(result, pieces[i:i+inc])
+	}
+	return result
+}
+
+func allIntsEqual(s [][]int) bool {
+	if len(s) < 2 {
+		return false
+	}
+	first := s[0]
+	for _, each := range s[1:] {
+		if !slices.Equal(first, each) {
+			return false
+		}
+	}
+	return true
 }

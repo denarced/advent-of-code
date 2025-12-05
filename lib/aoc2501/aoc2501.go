@@ -24,13 +24,8 @@ func SolvePassword(lines []string, allZeroes bool) int {
 		for _, value := range rot.values {
 			previous := pointer
 			pointer += rot.m * value
-			if allZeroes && value != 0 {
-				flippedOver := previous > 0 && pointer <= 0
-				flippedUnder := previous <= 99 && pointer > 99
-				flowedOver := previous == 0 && (pointer == -100 || pointer == 100)
-				if flippedOver || flippedUnder || flowedOver {
-					count++
-				}
+			if allZeroes && value != 0 && flipped(previous, pointer) {
+				count++
 			}
 			pointer = (pointer + 100) % 100
 		}
@@ -39,6 +34,13 @@ func SolvePassword(lines []string, allZeroes bool) int {
 		}
 	}
 	return count
+}
+
+func flipped(previous, pointer int) bool {
+	under := previous > 0 && pointer <= 0
+	over := previous <= 99 && pointer > 99
+	complete := previous == 0 && (pointer == -100 || pointer == 100)
+	return under || over || complete
 }
 
 type rotation struct {
