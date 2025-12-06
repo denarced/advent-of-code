@@ -2,11 +2,11 @@ package aoc2506
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 type operator int
@@ -180,8 +180,9 @@ mainLoop:
 func splitWithIndexes(s string, indexes []int) []string {
 	var current []rune
 	var runes [][]rune
+	indexSet := gent.NewSet(indexes...)
 	for i, r := range s {
-		if slices.Contains(indexes, i) {
+		if indexSet.Contains(i) {
 			if len(current) > 0 {
 				runes = append(runes, current)
 				current = nil
