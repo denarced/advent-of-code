@@ -112,17 +112,20 @@ func splitInt(n int64) []int {
 	if n == 0 {
 		return []int{0}
 	}
-	var digits []int
+	i := deriveIntLength(n)
+	digits := make([]int, i)
+	i--
 	for n > 0 {
-		digits = slices.Insert(digits, 0, int(n%10))
+		digits[i] = int(n % 10)
+		i--
 		n /= 10
 	}
 	return digits
 }
 
 func splitInts(pieces []int, n int) [][]int {
-	var result [][]int
 	inc := len(pieces) / n
+	result := make([][]int, 0, len(pieces)/inc)
 	for i := 0; i < len(pieces); i += inc {
 		result = append(result, pieces[i:i+inc])
 	}
