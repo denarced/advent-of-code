@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDo(t *testing.T) {
+func TestSumInvalidIDs(t *testing.T) {
 	readTestData := func(req *require.Assertions) []string {
 		lines, err := shared.ReadLinesFromFile("testdata/in.txt")
 		req.NoError(err, "failed to read lines")
