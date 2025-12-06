@@ -1,13 +1,13 @@
 package shared
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/denarced/advent-of-code/shared/inr"
 )
 
 var (
@@ -81,27 +81,7 @@ func Or[T any](o bool, yes, no T) T {
 }
 
 func ReadLinesFromFile(filep string) (lines []string, err error) {
-	var f *os.File
-	f, err = os.Open(filep)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	var b []byte
-	b, err = io.ReadAll(f)
-	if err != nil {
-		return
-	}
-
-	for _, each := range bytes.Split(b, []byte("\n")) {
-		line := strings.TrimSpace(string(each))
-		if line == "" {
-			continue
-		}
-		lines = append(lines, line)
-	}
-	return
+	return inr.ReadPath(filep)
 }
 
 func ToColumns(s []string) (left []string, right []string) {
