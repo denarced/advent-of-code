@@ -15,6 +15,7 @@ func main() {
 	shared.Die(err, "ReadLinesFromFile")
 
 	fmt.Println("Count:")
-	fmt.Printf("    Splits: %d\n", aoc2507.CountSplits(lines))
+	fmt.Printf("    Splits:    %d\n", aoc2507.CountSplits(lines))
+	fmt.Printf("    Timelines: %d\n", aoc2507.CountTimelines(lines))
 	shared.Logger.Info("Done.")
 }

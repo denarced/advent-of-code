@@ -9,9 +9,20 @@ import (
 )
 
 func TestCountSplits(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
-	lines, err := inr.ReadPath("testdata/in.txt")
-	req.NoError(err, "read test data")
-	require.Equal(t, 21, CountSplits(lines))
+	readLines := func(req *require.Assertions) []string {
+		lines, err := inr.ReadPath("testdata/in.txt")
+		req.NoError(err, "read test data")
+		return lines
+	}
+
+	t.Run("splits", func(t *testing.T) {
+		shared.InitTestLogging(t)
+		req := require.New(t)
+		req.Equal(21, CountSplits(readLines(req)))
+	})
+	t.Run("timelines", func(t *testing.T) {
+		shared.InitTestLogging(t)
+		req := require.New(t)
+		req.Equal(40, CountTimelines(readLines(req)))
+	})
 }
