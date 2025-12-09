@@ -11,6 +11,7 @@ func main() {
 	shared.InitLogging()
 	shared.Logger.Info("Start.")
 
+	defer shared.SetupCPUProfiling("profile2507")()
 	lines, err := shared.ReadLinesFromFile("data/2025-07.txt")
 	shared.Die(err, "ReadLinesFromFile")
 

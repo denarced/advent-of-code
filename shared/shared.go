@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 
@@ -441,4 +442,26 @@ func DigitLength(i int) int {
 		return 1
 	}
 	return int(math.Log10(float64(i))) + 1
+}
+
+func SetupCPUProfiling(filen string) (callback func()) {
+	callback = func() {}
+	if _, ok := os.LookupEnv("aoc_profile"); !ok {
+		return
+	}
+	f, err := os.Create(filen)
+	if err != nil {
+		Logger.Error("Failed to setup CPU profiling.", "err", err)
+		return
+	}
+	err = pprof.StartCPUProfile(f)
+	if err != nil {
+		defer f.Close()
+		Logger.Error("Failed to start CPU profiling.", "err", err)
+		return
+	}
+	return func() {
+		defer f.Close()
+		defer pprof.StopCPUProfile()
+	}
 }
