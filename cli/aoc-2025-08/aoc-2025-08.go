@@ -15,7 +15,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile("data/2025-08.txt")
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Println("Circuit math:")
-	fmt.Printf("    : %d\n", aoc2508.CountCircuits(lines, 1000))
+	fmt.Println("Circuits:")
+	fmt.Printf("    Biggest: %d\n", aoc2508.CountCircuits(lines, 1000))
+	fmt.Printf("    X*X:     %d\n", aoc2508.CountCircuits(lines, 0))
 	shared.Logger.Info("Done.")
 }

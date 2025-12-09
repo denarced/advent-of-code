@@ -22,16 +22,23 @@ func CountCircuits(lines []string, limit int) int {
 	points := parseLines(lines)
 	distances := measureDistances(points)
 	pointDistances := sortDistances(distances)
-	if limit < len(pointDistances) {
+	if limit > 0 && limit < len(pointDistances) {
 		pointDistances = pointDistances[:limit]
 	}
 	shared.Logger.Debug("Distances.", "distances", pointDistances)
-	pointToCircuit := gatherCircuits(pointDistances)
+	var lastDistance pointDistance
+	pointToCircuit := gatherCircuits(
+		pointDistances,
+		func(pointDis pointDistance) { lastDistance = pointDis },
+	)
 	shared.Logger.Debug("Circuits formed.", "pointToCircuit", pointToCircuit)
 	sizes := deriveCircuitSizes(pointToCircuit)
 	shared.Logger.Debug("Sizes derived.", "sizes", sizes)
 	if len(sizes) > 3 {
 		sizes = sizes[:3]
+	}
+	if limit <= 0 {
+		return points[lastDistance.points[0]][0] * points[lastDistance.points[1]][0]
 	}
 	result := 1
 	for _, each := range sizes {
@@ -113,10 +120,14 @@ func sortDistances(distances map[[2]int]float64) []pointDistance {
 	return pointDistances
 }
 
-func gatherCircuits(pointDistances []pointDistance) map[int]int {
+func gatherCircuits(
+	pointDistances []pointDistance,
+	callback func(pointDis pointDistance),
+) map[int]int {
 	pointToCircuit := map[int]int{}
 	circuitIndex := -1
 	for _, each := range pointDistances {
+		addedToCircuit := true
 		aCircuit, aOk := pointToCircuit[each.points[0]]
 		bCircuit, bOk := pointToCircuit[each.points[1]]
 		if !aOk && !bOk {
@@ -141,6 +152,11 @@ func gatherCircuits(pointDistances []pointDistance) map[int]int {
 			for _, p := range movedPoints {
 				pointToCircuit[p] = aCircuit
 			}
+		} else {
+			addedToCircuit = false
+		}
+		if addedToCircuit {
+			callback(each)
 		}
 	}
 	return pointToCircuit
