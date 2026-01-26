@@ -24,8 +24,8 @@ func main() {
 	fmt.Println("Fewest clicks:")
 	fmt.Printf(
 		"    Indicator lights: %d\n",
-		aoc2510.DeriveFewestClicks(lines, true, 0))
+		aoc2510.DeriveFewestClicks(lines, true))
 	fmt.Printf(
 		"    Joltage levels:   %d\n",
-		aoc2510.DeriveFewestClicks(lines, false, 9))
+		aoc2510.DeriveFewestClicks(lines, false))
 }
