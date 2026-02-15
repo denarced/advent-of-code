@@ -14,6 +14,9 @@ func main() {
 	lines, err := shared.ReadLinesFromFile("data/2025-11.txt")
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Println("Path count:", aoc2511.CountPaths(lines))
+	fmt.Println("Path count:")
+	for _, each := range []string{"you", "svr"} {
+		fmt.Printf("    %s -> out: %d\n", each, aoc2511.CountPaths(lines, each))
+	}
 	shared.Logger.Info("Done.")
 }
