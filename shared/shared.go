@@ -106,18 +106,18 @@ func trim(s []string) (trimmed []string) {
 	return
 }
 
-type number interface {
+type Number interface {
 	uint | uint8 | uint16 | uint32 | uint64 | int | int8 | int16 | int32 | int64 | float32 | float64
 }
 
-func Max[T number](a, b T) T {
+func Max[T Number](a, b T) T {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func Min[T number](a, b T) T {
+func Min[T Number](a, b T) T {
 	if a < b {
 		return a
 	}
