@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
-	"github.com/denarced/advent-of-code/shared/inr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,5 +60,4 @@ func TestParseDigitIn(t *testing.T) {
 	run("suffix overlapping", "eightwo", 2, suffixTarget, false, expectedSuccess)
 	run("justDigits prefix word", "one", 0, prefixTarget, true, expectedFailure)
 	run("justDigits prefix digit", "1one", 1, prefixTarget, true, expectedSuccess)
-}
 }

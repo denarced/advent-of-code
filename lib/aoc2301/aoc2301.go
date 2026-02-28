@@ -28,14 +28,9 @@ var (
 )
 
 func SumCalibrationValues(lines []string, justDigits bool) int {
-	var digits []int
-	for _, each := range lines {
-		d := parseDigit(each, justDigits)
-		digits = append(digits, d)
-	}
 	var sum int
-	for _, each := range digits {
-		sum += each
+	for _, each := range lines {
+		sum += parseDigit(each, justDigits)
 	}
 	return sum
 }
