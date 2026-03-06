@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Total points: %d\n", aoc2304.SumPoints(lines))
+	fmt.Println("Total")
+	fmt.Printf("    Points:       %d\n", aoc2304.SumPoints(lines, false))
+	fmt.Printf("    Scratchcards: %d\n", aoc2304.SumPoints(lines, true))
 	shared.Logger.Info("Done.")
 }
