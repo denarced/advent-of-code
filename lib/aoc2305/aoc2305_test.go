@@ -10,11 +10,21 @@ import (
 )
 
 func TestDeriveLowestLocation(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
-	lines, err := inr.ReadPath("testdata/in.txt", inr.IncludeEmpty())
-	req.NoError(err, "failed to read test data")
-	require.Equal(t, 35, DeriveLowestLocation(lines))
+	run := func(useRange bool, expected int) {
+		name := "range"
+		if !useRange {
+			name = "!range"
+		}
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			lines, err := inr.ReadPath("testdata/in.txt", inr.IncludeEmpty())
+			req.NoError(err, "failed to read test data")
+			req.Equal(expected, DeriveLowestLocation(lines, useRange))
+		})
+	}
+	run(false, 35)
+	run(true, 46)
 }
 
 func TestSplitToBlocks(t *testing.T) {
@@ -74,4 +84,14 @@ func TestTranslate(t *testing.T) {
 			require.Equal(t, each.expected, tested.translate(each.src))
 		})
 	}
+}
+
+func TestToRanges(t *testing.T) {
+	require.Equal(
+		t,
+		[]intRange{
+			{start: 79, end: 92},
+			{start: 10, end: 10},
+		},
+		toRanges([]int{79, 14, 10, 1}, true))
 }

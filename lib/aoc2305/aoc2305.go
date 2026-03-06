@@ -10,15 +10,42 @@ import (
 	"github.com/denarced/gent"
 )
 
-func DeriveLowestLocation(lines []string) int {
+type intRange struct {
+	start, end int
+}
+
+func toRanges(ints []int, useRange bool) []intRange {
+	var result []intRange
+	if !useRange {
+		for _, each := range ints {
+			result = append(result, intRange{start: each, end: each})
+		}
+	} else {
+		for i := 0; i < len(ints); i += 2 {
+			result = append(result, intRange{start: ints[i], end: ints[i] + ints[i+1] - 1})
+		}
+	}
+	return result
+}
+
+func DeriveLowestLocation(lines []string, useRange bool) int {
+	shared.Logger.Info("Derive lowest location.", "range", useRange)
 	seeds, corrs := parseLines(lines)
 	lowest := math.MaxInt
-	for _, each := range seeds {
-		for _, fire := range corrs {
-			each = fire.translate(each)
+	for _, aRange := range toRanges(seeds, useRange) {
+		for i := aRange.start; i <= aRange.end; i++ {
+			seed := i
+			for _, aCorr := range corrs {
+				seed = aCorr.translate(seed)
+			}
+			candidate := min(lowest, seed)
+			if candidate < lowest {
+				shared.Logger.Info("New lowest found.", "seed", seed)
+			}
+			lowest = candidate
 		}
-		lowest = min(lowest, each)
 	}
+	shared.Logger.Info("Lowest found.", "lowest", lowest)
 	return lowest
 }
 
@@ -77,7 +104,7 @@ func parseSeeds(s string) []int {
 	if strings.TrimSpace(pieces[0]) != "seeds" {
 		panic("first line should start with \"seeds\"")
 	}
-	return gent.Map(strings.Fields(pieces[1]), func(s string) int {
+	seeds := gent.Map(strings.Fields(pieces[1]), func(s string) int {
 		i, err := strconv.Atoi(s)
 		if err != nil {
 			shared.Logger.Error("Failed to convert seed to number", "err", err)
@@ -85,6 +112,7 @@ func parseSeeds(s string) []int {
 		}
 		return i
 	})
+	return seeds
 }
 
 func splitToBlocks(lines []string) [][]string {

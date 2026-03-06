@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Lowest location: %d\n", aoc2305.DeriveLowestLocation(lines))
+	fmt.Println("Lowest location:")
+	fmt.Printf("    Specific: %d\n", aoc2305.DeriveLowestLocation(lines, false))
+	fmt.Printf("    Ranges:   %d\n", aoc2305.DeriveLowestLocation(lines, true))
 	shared.Logger.Info("Done.")
 }
