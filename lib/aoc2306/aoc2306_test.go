@@ -10,11 +10,21 @@ import (
 )
 
 func TestMultiplyCounts(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
-	lines, err := inr.ReadPath("testdata/in.txt")
-	req.NoError(err, "failed to read test data")
-	req.Equal(288, MultiplyCounts(lines))
+	run := func(multipleRaces bool, expected int) {
+		name := "one race"
+		if multipleRaces {
+			name = "multiple races"
+		}
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			lines, err := inr.ReadPath("testdata/in.txt")
+			req.NoError(err, "failed to read test data")
+			req.Equal(expected, MultiplyCounts(lines, multipleRaces))
+		})
+	}
+	run(true, 288)
+	run(false, 71503)
 }
 
 func TestFindRoots(t *testing.T) {

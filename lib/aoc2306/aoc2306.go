@@ -8,8 +8,8 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-func MultiplyCounts(lines []string) int {
-	races := parseLines(lines)
+func MultiplyCounts(lines []string, multiple bool) int {
+	races := parseLines(lines, multiple)
 	shared.Logger.Info("Multiple counts to win.", "race count", len(races))
 	product := 1
 	for _, each := range races {
@@ -61,7 +61,7 @@ type race struct {
 	distance int
 }
 
-func parseLines(lines []string) []race {
+func parseLines(lines []string, multiple bool) []race {
 	var times []int
 	var distances []int
 	for _, each := range lines {
@@ -73,9 +73,9 @@ func parseLines(lines []string) []race {
 		}
 		switch pieces[0] {
 		case "time":
-			times = toInts(pieces[1])
+			times = toInts(pieces[1], multiple)
 		case "distance":
-			distances = toInts(pieces[1])
+			distances = toInts(pieces[1], multiple)
 		default:
 			shared.Logger.Error("Unknown line type.", "prefix", pieces[0])
 			panic("unknown kind of line")
@@ -101,8 +101,11 @@ func parseLines(lines []string) []race {
 	return races
 }
 
-func toInts(s string) []int {
+func toInts(s string, multiple bool) []int {
 	fields := strings.Fields(s)
+	if !multiple {
+		fields = []string{strings.Join(fields, "")}
+	}
 	ints := make([]int, len(fields))
 	for i, each := range fields {
 		value, err := strconv.Atoi(each)

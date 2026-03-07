@@ -18,6 +18,7 @@ func main() {
 	shared.Die(err, "ReadLinesFromFile")
 
 	fmt.Println("Ways to win:")
-	fmt.Printf("    Product: %d\n", aoc2306.MultiplyCounts(lines))
+	fmt.Printf("    Multiple races: %d\n", aoc2306.MultiplyCounts(lines, true))
+	fmt.Printf("    One race:       %d\n", aoc2306.MultiplyCounts(lines, false))
 	shared.Logger.Info("Done.")
 }
