@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/denarced/advent-of-code/shared"
 )
@@ -39,15 +38,36 @@ const (
 type card int
 type handType int
 
+func (v handType) String() string {
+	switch v {
+	case handHighCard:
+		return "highCard"
+	case handOnePair:
+		return "onePair"
+	case handTwoPair:
+		return "twoPair"
+	case handThree:
+		return "threeOfKind"
+	case handFullHouse:
+		return "fullHouse"
+	case handFour:
+		return "fourOfKind"
+	case handFive:
+		return "fiveOfKind"
+	default:
+		return "unknown"
+	}
+}
+
 type game struct {
 	cards    [5]card
 	bid      int
 	handType handType
 }
 
-func CountWinnings(lines []string) int {
+func CountWinnings(lines []string, useJokers bool) int {
 	shared.Logger.Info("Count total winnings - start.")
-	games := sortGames(parseLines(lines))
+	games := sortGames(parseLines(lines), useJokers)
 	shared.Logger.Info("Games parsed.", "count", len(games))
 	var total int
 	for i, each := range games {
@@ -59,9 +79,30 @@ func CountWinnings(lines []string) int {
 	return total
 }
 
-func sortGames(games []game) []game {
+func countJokers(cards [5]card) int {
+	var count int
+	for _, each := range cards {
+		if each == cardJ {
+			count++
+		}
+	}
+	return count
+}
+
+func convertCardToInt(aCard card, useJokers bool) int {
+	nominal := int(aCard)
+	if !useJokers || aCard != cardJ {
+		return nominal
+	}
+	return 1
+}
+
+func sortGames(games []game, useJokers bool) []game {
 	for i, each := range games {
 		each.handType = deriveHandType(each.cards)
+		if useJokers && countJokers(each.cards) > 0 {
+			each.handType = deriveHighestHand(each)
+		}
 		games[i] = each
 	}
 	slices.SortFunc(games, func(a, b game) int {
@@ -70,7 +111,7 @@ func sortGames(games []game) []game {
 			return diff
 		}
 		for i := range a.cards {
-			diff = int(a.cards[i]) - int(b.cards[i])
+			diff = convertCardToInt(a.cards[i], useJokers) - convertCardToInt(b.cards[i], useJokers)
 			if diff != 0 {
 				return diff
 			}
@@ -216,6 +257,10 @@ func parseLine(line string) game {
 }
 
 func parseCards(hand string) [5]card {
+	if len(hand) != 5 {
+		shared.Logger.Error("Invalid hand.", "hand", hand)
+		panic("invalid hand")
+	}
 	var cards [5]card
 	for i, each := range []rune(hand) {
 		cards[i] = toCard(each)
@@ -224,34 +269,80 @@ func parseCards(hand string) [5]card {
 }
 
 func toCard(r rune) card {
-	switch unicode.ToUpper(r) {
-	case 'T':
-		return cardT
-	case 'J':
-		return cardJ
-	case 'Q':
-		return cardQ
-	case 'K':
-		return cardK
-	case 'A':
-		return cardA
-	case '2':
-		return card2
-	case '3':
-		return card3
-	case '4':
-		return card4
-	case '5':
-		return card5
-	case '6':
-		return card6
-	case '7':
-		return card7
-	case '8':
-		return card8
-	case '9':
-		return card9
-	default:
-		panic(fmt.Sprintf("unknown card: %s", string(r)))
+	letters := []rune("23456789TJQKA")
+	cards := []card{
+		card2,
+		card3,
+		card4,
+		card5,
+		card6,
+		card7,
+		card8,
+		card9,
+		cardT,
+		cardJ,
+		cardQ,
+		cardK,
+		cardA,
 	}
+	for i, each := range letters {
+		if each == r {
+			return cards[i]
+		}
+	}
+	panic(fmt.Sprintf("unknown card: %s", string(r)))
+}
+
+func (v card) String() string {
+	intVal := int(v)
+	if 2 <= intVal && intVal <= 9 {
+		return fmt.Sprint(intVal)
+	}
+	switch v {
+	case cardT:
+		return "T"
+	case cardJ:
+		return "J"
+	case cardQ:
+		return "Q"
+	case cardK:
+		return "K"
+	case cardA:
+		return "A"
+	default:
+		return "unknown"
+	}
+}
+
+func deriveHighestHand(aGame game) handType {
+	jokerCount := countJokers(aGame.cards)
+	commonCount := countMostCommonNonJoker(aGame.cards)
+	combinedCount := jokerCount + commonCount
+	if combinedCount == 5 {
+		return handFive
+	}
+	if combinedCount == 4 {
+		return handFour
+	}
+	if len(countCards(aGame.cards)) == 3 {
+		return handFullHouse
+	}
+	if combinedCount == 3 {
+		return handThree
+	}
+	if jokerCount == 1 && commonCount == 1 {
+		return handOnePair
+	}
+	return aGame.handType
+}
+
+func countMostCommonNonJoker(cards [5]card) int {
+	counts := countCards(cards)
+	var maximus int
+	for c, each := range counts {
+		if c != cardJ {
+			maximus = max(maximus, each)
+		}
+	}
+	return maximus
 }

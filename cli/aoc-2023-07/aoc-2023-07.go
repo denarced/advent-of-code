@@ -17,7 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Println("Winnings:")
-	fmt.Printf("    Total: %d\n", aoc2307.CountWinnings(lines))
+	fmt.Println("Total winnings:")
+	fmt.Printf("    Without jokers: %d\n", aoc2307.CountWinnings(lines, false))
+	fmt.Printf("    With jokers:    %d\n", aoc2307.CountWinnings(lines, true))
 	shared.Logger.Info("Done.")
 }
