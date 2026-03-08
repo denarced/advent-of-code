@@ -465,3 +465,33 @@ func SetupCPUProfiling(filen string) (callback func()) {
 		defer pprof.StopCPUProfile()
 	}
 }
+
+// SplitToBlocks splits lines with empty / blank lines.
+func SplitToBlocks(lines []string) [][]string {
+	var start int
+	// Skip empty lines.
+	for i := range lines {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed != "" {
+			start = i
+			break
+		}
+	}
+	var blocks [][]string
+	var current []string
+	for i := start; i < len(lines); i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed != "" {
+			current = append(current, trimmed)
+			continue
+		}
+		if current != nil {
+			blocks = append(blocks, current)
+			current = nil
+		}
+	}
+	if current != nil {
+		blocks = append(blocks, current)
+	}
+	return blocks
+}

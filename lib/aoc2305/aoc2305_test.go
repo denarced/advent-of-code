@@ -30,7 +30,7 @@ func TestDeriveLowestLocation(t *testing.T) {
 func TestSplitToBlocks(t *testing.T) {
 	shared.InitTestLogging(t)
 	req := require.New(t)
-	blocks := splitToBlocks([]string{
+	blocks := shared.SplitToBlocks([]string{
 		"",
 		"seed-to-soil map:",
 		"50 98 2",
