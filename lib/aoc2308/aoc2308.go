@@ -2,6 +2,7 @@ package aoc2308
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -42,6 +43,65 @@ func CountSteps(lines []string) int {
 	}
 	shared.Logger.Info("Steps counted.", "count", i)
 	return i
+}
+
+type pathSpec struct {
+	firstCount  int
+	repeatCount int
+}
+
+func CountStepsInSync(lines []string) int {
+	path, nodes := parseLines(lines)
+	var starters []string
+	for key := range nodes {
+		if key[len(key)-1] == 'A' {
+			starters = append(starters, key)
+		}
+	}
+	shared.Logger.Info(
+		"Count steps in sync.",
+		"path length", len(path),
+		"node count", len(nodes),
+		"starter count", len(starters),
+	)
+
+	pathSpecs := make([]pathSpec, len(starters))
+	for i, each := range starters {
+		pathSpecs[i] = findPathSpecs(path, nodes[each])
+	}
+	shared.Logger.Info("Path specs derived.", "specs", pathSpecs)
+	findLowest := func() int {
+		low := math.MaxInt
+		var index int
+		for i, each := range pathSpecs {
+			if each.firstCount < low {
+				index = i
+				low = each.firstCount
+			}
+		}
+		return index
+	}
+	areAllEqual := func() bool {
+		value := -1
+		for _, each := range pathSpecs {
+			if value < 0 {
+				value = each.firstCount
+			} else if value != each.firstCount {
+				return false
+			}
+		}
+		return true
+	}
+	for {
+		index := findLowest()
+		pathSpecs[index].firstCount += pathSpecs[index].repeatCount
+		shared.Logger.Debug("Path specs.", "specs", pathSpecs)
+		if areAllEqual() {
+			count := pathSpecs[0].firstCount
+			shared.Logger.Info("Steps counted.", "count", count)
+			return count
+		}
+	}
 }
 
 type node struct {
@@ -129,5 +189,31 @@ func parseTargetNodes(s string) (left, right string) {
 		"names", s)
 	left = pieces[0]
 	right = pieces[1]
+	return
+}
+
+func findPathSpecs(path string, nod *node) (spec pathSpec) {
+	steps := []rune(path)
+	var i int
+	for {
+		each := steps[i%len(steps)]
+		i++
+		nod = getNext(nod, each)
+		if nod.name[len(nod.name)-1] == 'Z' {
+			spec.firstCount = i
+			break
+		}
+	}
+	count := 0
+	for {
+		each := steps[i%len(steps)]
+		i++
+		count++
+		nod = getNext(nod, each)
+		if nod.name[len(nod.name)-1] == 'Z' {
+			spec.repeatCount = count
+			break
+		}
+	}
 	return
 }

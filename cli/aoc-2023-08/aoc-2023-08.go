@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Step count: %d\n", aoc2308.CountSteps(lines))
+	fmt.Println("Step count:")
+	fmt.Printf("    Solo:    %d\n", aoc2308.CountSteps(lines))
+	fmt.Printf("    In sync: %d\n", aoc2308.CountStepsInSync(lines))
 	shared.Logger.Info("Done.")
 }

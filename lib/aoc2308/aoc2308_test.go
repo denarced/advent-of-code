@@ -16,6 +16,14 @@ func TestCountSteps(t *testing.T) {
 	req.Equal(2, CountSteps(lines))
 }
 
+func TestCountStepsInSync(t *testing.T) {
+	shared.InitTestLogging(t)
+	req := require.New(t)
+	lines, err := inr.ReadPath("testdata/in2.txt", inr.IncludeEmpty())
+	req.NoError(err, "failed to read test data")
+	req.Equal(6, CountStepsInSync(lines))
+}
+
 func TestParseLines(t *testing.T) {
 	shared.InitTestLogging(t)
 	path, nodes := parseLines([]string{
@@ -43,4 +51,29 @@ func TestParseLines(t *testing.T) {
 
 	req.Nil(cccNode.left, "CCC left is nil")
 	req.Nil(cccNode.right, "CCC right is nil")
+}
+
+func TestFindPathSpecs(t *testing.T) {
+	shared.InitTestLogging(t)
+	req := require.New(t)
+
+	path, nodes := parseLines([]string{
+		"LR",
+		"",
+		"AAA = (BBB, XXX)",
+		"BBB = (XXX, CCC)",
+		"CCC = (DDD, XXX)",
+		"DDD = (XXX, ZZZ)",
+		"ZZZ = (DDD, XXX)",
+	})
+	nod := nodes["AAA"]
+
+	// EXERCISE
+	spec := findPathSpecs(path, nod)
+
+	// VERIFY
+	req.Equal(pathSpec{
+		firstCount:  4,
+		repeatCount: 2,
+	}, spec)
 }
