@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of extrapolated values: %d\n", aoc2309.SumExtrapolatedValues(lines))
+	fmt.Println("Sum of extrapolated values:")
+	fmt.Printf("    Right: %d\n", aoc2309.SumExtrapolatedValues(lines, true))
+	fmt.Printf("    Left : %d\n", aoc2309.SumExtrapolatedValues(lines, false))
 	shared.Logger.Info("Done.")
 }

@@ -9,12 +9,18 @@ import (
 	"github.com/denarced/gent"
 )
 
-func SumExtrapolatedValues(lines []string) int {
+func SumExtrapolatedValues(lines []string, right bool) int {
 	table := parseLines(lines)
-	shared.Logger.Info("Extrapolate values.", "table size", len(table))
+	shared.Logger.Info(
+		"Extrapolate values.",
+		"table size",
+		len(table),
+		"add value to the end",
+		right,
+	)
 	var sum int
 	for _, each := range table {
-		result := extrapolate(each)
+		result := extrapolate(each, right)
 		sum += result
 		shared.Logger.Info("Sum extrapolated.", "sum", result, "values", each, "total", sum)
 	}
@@ -41,7 +47,7 @@ func isAllZeroes(ints []int) bool {
 	return true
 }
 
-func extrapolate(values []int) int {
+func extrapolate(values []int, right bool) int {
 	if len(values) < 3 {
 		panic(fmt.Sprintf("too few values: %v", values))
 	}
@@ -57,20 +63,43 @@ func extrapolate(values []int) int {
 		}
 		table = append(table, added)
 	}
-	table[len(table)-1] = append(getLast(table), 0)
+	if right {
+		table[len(table)-1] = append(getLast(table), 0)
+	} else {
+		table[len(table)-1] = append([]int{0}, getLast(table)...)
+	}
 	for i := len(table) - 2; i >= 0; i-- {
 		top := table[i]
 		bottom := table[i+1]
-		added := getLast(top) + getLast(bottom)
-		top = append(top, added)
+		var added int
+		if right {
+			added = getLast(top) + getLast(bottom)
+		} else {
+			added = getFirst(top) - getFirst(bottom)
+		}
+		if right {
+			top = append(top, added)
+		} else {
+			top = append([]int{added}, top...)
+		}
 		table[i] = top
 	}
-	return getLast(table[0])
+	if right {
+		return getLast(table[0])
+	}
+	return getFirst(table[0])
 }
 
-func getLast[T any](values []T) (t T) {
+func getLast[S ~[]T, T any](values S) (t T) {
 	if len(values) == 0 {
 		return
 	}
 	return values[len(values)-1]
+}
+
+func getFirst[S ~[]T, T any](values S) (t T) {
+	if len(values) > 0 {
+		t = values[0]
+	}
+	return
 }
