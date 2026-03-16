@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"runtime/pprof"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -323,7 +324,17 @@ func (v *Board) Set(loc Loc, c rune) {
 	line[x] = c
 }
 
-func (v *Board) NextTo(loc Loc, c rune, includeCorners bool) []Loc {
+// NextTo return adjacent locations that contains c (rune or []rune).
+func (v *Board) NextTo(loc Loc, c any, includeCorners bool) []Loc {
+	var runes []rune
+	switch v := c.(type) {
+	case rune:
+		runes = []rune{v}
+	case []rune:
+		runes = v
+	default:
+		panic("c must be rune or []rune")
+	}
 	locs := []Loc{}
 	for _, xd := range []int{-1, 0, 1} {
 		for _, yd := range []int{-1, 0, 1} {
@@ -335,7 +346,7 @@ func (v *Board) NextTo(loc Loc, c rune, includeCorners bool) []Loc {
 			}
 			near := Loc{X: loc.X + xd, Y: loc.Y + yd}
 			atC, ok := v.Get(near)
-			if ok && atC == c {
+			if ok && slices.Contains(runes, atC) {
 				locs = append(locs, near)
 			}
 		}
