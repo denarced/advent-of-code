@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Step count: %d\n", aoc2310.CountSteps(lines))
+	fmt.Println("Counts:")
+	fmt.Printf("    Steps:           %d\n", aoc2310.CountSteps(lines))
+	fmt.Printf("    Squeezed blocks: %d\n", aoc2310.FindCrackCount(lines))
 	shared.Logger.Info("Done.")
 }

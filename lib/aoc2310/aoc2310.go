@@ -114,7 +114,7 @@ func step(brd *shared.Board, aWalker walker) (result walker) {
 	}
 	c := brd.GetOrDie(nextLoc)
 	switch c {
-	case '|', '-':
+	case '|', '-', 'S':
 		result.dir = aWalker.dir
 	default:
 		matching, ok := directions[c]
@@ -123,5 +123,175 @@ func step(brd *shared.Board, aWalker walker) (result walker) {
 		}
 		result.dir = matching[aWalker.dir]
 	}
+	return
+}
+
+func FindCrackCount(lines []string) int {
+	shared.Logger.Info("Find crack count.", "line count", len(lines))
+	brd := shared.NewBoard(lines)
+	start := brd.FindOrDie('S')
+	startDirs := findDirections(brd, start)
+	chosenDir := startDirs[0]
+	if shared.IsDebugEnabled() {
+		shared.Logger.Debug("Start with board.", "loc", start, "dir", chosenDir)
+	}
+	aWalker := walker{loc: start, dir: chosenDir}
+	walls := gent.NewSet(start)
+	var balance int
+	for {
+		next := step(brd, aWalker)
+		if next.loc == start {
+			next.dir = chosenDir
+			break
+		}
+		balance += deriveTurn(aWalker.dir, next.dir)
+		walls.Add(next.loc)
+		aWalker = next
+	}
+	// Negative balance: turned more left than right so counter clockwise, and therefore inside of
+	// shape is on the left.
+	if balance == 0 {
+		panic("balance can't be zero, impossible")
+	}
+	shared.Logger.Info("First round done.", "balance", balance)
+	aWalker = walker{loc: start, dir: chosenDir}
+	squeezed := gent.NewSet[shared.Loc]()
+	excluded := gent.NewSet[shared.Loc]()
+	callFillUps := func(w walker, dir shared.Direction) {
+		for _, each := range []struct {
+			set *gent.Set[shared.Loc]
+			bal int
+		}{
+			{squeezed, balance},
+			{excluded, -balance},
+		} {
+			fillUp(brd, walls, each.set, w, dir, each.bal)
+		}
+	}
+	callFillUps(aWalker, aWalker.dir)
+	for {
+		next := step(brd, aWalker)
+		if next.loc == start {
+			break
+		}
+		callFillUps(next, aWalker.dir)
+		aWalker = next
+	}
+	if containCommon(squeezed, excluded) {
+		panic("common in squeezed and excluded")
+	}
+	if containCommon(squeezed, walls) {
+		panic("common between squeezed and walls")
+	}
+	if containCommon(excluded, walls) {
+		panic("common in walls and excluded")
+	}
+
+	squeezeCount := squeezed.Len()
+	wallCount := walls.Len()
+	excludedCount := excluded.Len()
+	total := squeezeCount + wallCount + excludedCount
+	shared.Logger.Info(
+		"Got crack count.",
+		"count", squeezeCount,
+		"wall count", wallCount,
+		"excluded count", excludedCount,
+		"sum count", total,
+		"total count", brd.GetArea(),
+	)
+	if total != brd.GetArea() {
+		panic("count mismatch between board and counts")
+	}
+
+	return squeezed.Len()
+}
+
+func deriveTurn(before, after shared.Direction) int {
+	deriveDirValue := func(left, right shared.Direction) int {
+		switch after {
+		case left:
+			return -1
+		case right:
+			return 1
+		default:
+			return 0
+		}
+	}
+	switch before {
+	case shared.RealEast:
+		return deriveDirValue(shared.RealNorth, shared.RealSouth)
+	case shared.RealSouth:
+		return deriveDirValue(shared.RealEast, shared.RealWest)
+	case shared.RealWest:
+		return deriveDirValue(shared.RealSouth, shared.RealNorth)
+	case shared.RealNorth:
+		return deriveDirValue(shared.RealWest, shared.RealEast)
+	default:
+		panic("invalid before dir")
+	}
+}
+
+func fillUp(
+	brd *shared.Board,
+	walls, squuezed *gent.Set[shared.Loc],
+	aWalker walker,
+	origignalDir shared.Direction,
+	balance int,
+) {
+	turns := []shared.Direction{aWalker.dir}
+	if aWalker.dir != origignalDir {
+		turns = append(turns, origignalDir)
+	}
+
+	var dirs []shared.Direction
+	for _, each := range turns {
+		dir := gent.Tri(balance > 0, each.TurnRealRight(), each.TurnRealLeft())
+		dirs = append(dirs, dir)
+	}
+
+	var firstCandidates []shared.Loc
+	for _, each := range dirs {
+		firstCandidates = append(firstCandidates, aWalker.loc.Delta(shared.Loc(each)))
+	}
+
+	var stack []shared.Loc
+	for _, each := range firstCandidates {
+		if walls.Has(each) || squuezed.Has(each) {
+			continue
+		}
+		if _, ok := brd.Get(each); !ok {
+			continue
+		}
+		squuezed.Add(each)
+		stack = append(stack, each)
+	}
+	for len(stack) > 0 {
+		block := stack[0]
+		if len(stack) == 1 {
+			stack = nil
+		} else {
+			stack = stack[1:]
+		}
+		for _, each := range shared.RealPrimaryDirections {
+			cand := block.Delta(shared.Loc(each))
+			if _, ok := brd.Get(cand); !ok {
+				continue
+			}
+			if walls.Has(cand) || squuezed.Has(cand) {
+				continue
+			}
+			squuezed.Add(cand)
+			stack = append(stack, cand)
+		}
+	}
+}
+
+func containCommon(a, b *gent.Set[shared.Loc]) (common bool) {
+	a.ForEach(func(loc shared.Loc, stop func()) {
+		if b.Has(loc) {
+			common = true
+			stop()
+		}
+	})
 	return
 }

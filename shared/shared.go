@@ -180,6 +180,21 @@ func (v Direction) TurnRealRight() Direction {
 	}
 }
 
+func (v Direction) TurnRealLeft() Direction {
+	switch v {
+	case RealEast:
+		return RealNorth
+	case RealSouth:
+		return RealEast
+	case RealWest:
+		return RealSouth
+	case RealNorth:
+		return RealWest
+	default:
+		panic("no direction")
+	}
+}
+
 type Loc struct {
 	X int
 	Y int
@@ -409,6 +424,11 @@ func (v *Board) GetWidth() int {
 
 func (v *Board) GetHeight() int {
 	return len(v.grid)
+}
+
+// GetArea return width*height.
+func (v *Board) GetArea() int {
+	return v.GetWidth() * v.GetHeight()
 }
 
 func Pow(b, e int) int {

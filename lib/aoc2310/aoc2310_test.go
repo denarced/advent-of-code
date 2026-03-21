@@ -1,6 +1,7 @@
 package aoc2310
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -132,4 +133,82 @@ func TestStep(t *testing.T) {
 	for _, tt := range tests {
 		run(tt.name, tt.current, tt.expected)
 	}
+}
+
+func TestMovement(t *testing.T) {
+	shared.InitTestLogging(t)
+	req := require.New(t)
+	brd := shared.NewBoard([]string{
+		".FS7.",
+		".|.|.",
+		".L-J.",
+	})
+
+	gatherSteps := func(dir shared.Direction) []shared.Loc {
+		start := brd.FindOrDie('S')
+		aWalker := walker{
+			loc: start,
+			dir: dir,
+		}
+		steps := []shared.Loc{start}
+		for {
+			next := step(brd, aWalker)
+			if next.loc == start {
+				break
+			}
+			steps = append(steps, next.loc)
+			aWalker = next
+		}
+		return steps
+	}
+
+	req.Equal(
+		[]shared.Loc{
+			{X: 2, Y: 2},
+			{X: 3, Y: 2},
+			{X: 3, Y: 1},
+			{X: 3, Y: 0},
+			{X: 2, Y: 0},
+			{X: 1, Y: 0},
+			{X: 1, Y: 1},
+			{X: 1, Y: 2},
+		},
+		gatherSteps(shared.RealEast))
+	req.Equal(
+		[]shared.Loc{
+			{X: 2, Y: 2},
+			{X: 1, Y: 2},
+			{X: 1, Y: 1},
+			{X: 1, Y: 0},
+			{X: 2, Y: 0},
+			{X: 3, Y: 0},
+			{X: 3, Y: 1},
+			{X: 3, Y: 2},
+		},
+		gatherSteps(shared.RealWest))
+}
+
+func TestFindCrackCount(t *testing.T) {
+	run := func(filen string, expected int) {
+		t.Run(filen, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+			lines, err := inr.ReadPath(filepath.Join("testdata", filen))
+			req.NoError(err)
+
+			// EXERCISE
+			count := FindCrackCount(lines)
+
+			// VERIFY
+			if expected >= 0 {
+				req.Equal(expected, count)
+			}
+		})
+	}
+
+	run("in2.txt", 4)
+	run("in3.txt", 4)
+	run("in4.txt", 10)
+	run("in5.txt", 8)
+	run("in6.txt", 1)
 }
