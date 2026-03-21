@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of distances: %d\n", aoc2311.SumDistances(lines))
+	fmt.Println("Sum of distances:")
+	fmt.Printf("    Young galaxies: %d\n", aoc2311.SumDistances(lines, 2))
+	fmt.Printf("    Old galaxies:   %d\n", aoc2311.SumDistances(lines, 1_000_000))
 	shared.Logger.Info("Done.")
 }
