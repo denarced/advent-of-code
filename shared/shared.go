@@ -50,7 +50,7 @@ var (
 	}
 )
 
-func Abs(i int) int {
+func Abs[T Number](i T) T {
 	if i < 0 {
 		return -i
 	}
