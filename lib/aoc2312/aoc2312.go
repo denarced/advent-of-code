@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/denarced/advent-of-code/shared"
 	"github.com/denarced/gent"
@@ -55,12 +57,28 @@ func (v springRow) String() string {
 			","))
 }
 
-func SumPermutations(lines []string) int {
+func SumPermutations(lines []string, mul int) int {
 	rows := parseLines(lines)
 	var count int
+	ch := make(chan int)
+	closer := make(chan bool)
+	go func() {
+		for i := range ch {
+			count += i
+		}
+		closer <- false
+	}()
+	var wg sync.WaitGroup
 	for _, each := range rows {
-		count += countPermutations(each)
+		wg.Add(1)
+		go func(row springRow) {
+			defer wg.Done()
+			ch <- countPermutations(row, mul)
+		}(each)
 	}
+	wg.Wait()
+	close(ch)
+	<-closer
 	return count
 }
 
@@ -110,14 +128,54 @@ func parseSpring(s string) spring {
 	return aSpring
 }
 
-func countPermutations(row springRow) int {
-	shared.Logger.Info("Count permutations.", "row", row)
-	var counter int
-	cb := func(_ spring) {
-		counter++
+func createCounter() (*int, func(spring)) {
+	var count int
+	return &count, func(_ spring) {
+		count++
 	}
-	hypothesize(row.springs, row.groups, cb)
-	return counter
+}
+
+func countPermutations(row springRow, mul int) int {
+	if shared.IsDebugEnabled() {
+		shared.Logger.Debug("Count permutations.", "row", row, "multiplier", mul)
+	}
+	count, counter := createCounter()
+	alpha := time.Now()
+	hypothesize(multiplySpring(row.springs, mul), multiplyGroups(row.groups, mul), counter)
+	shared.Logger.Info(
+		"Permutations counted.",
+		"count", *count,
+		"row", row,
+		"multiplier", mul,
+		"duration", time.Since(alpha),
+	)
+	return *count
+}
+
+func multiplySpring(s spring, mul int) spring {
+	if mul == 1 {
+		return s
+	}
+	result := make(spring, mul*len(s)+mul-1)
+	for n := range mul {
+		i := n*len(s) + n
+		copy(result[i:], s)
+		if n < (mul - 1) {
+			result[i+len(s)] = condUnknown
+		}
+	}
+	return result
+}
+
+func multiplyGroups(groups []int, mul int) []int {
+	if mul <= 1 {
+		return groups
+	}
+	result := make([]int, mul*len(groups))
+	for i := range mul {
+		copy(result[i*len(groups):], groups)
+	}
+	return result
 }
 
 func copySlice[S ~[]T, T any](s S) S {
@@ -126,21 +184,124 @@ func copySlice[S ~[]T, T any](s S) S {
 	return copied
 }
 
-func hypothesize(aSpring spring, groups []int, cb func(spring)) {
-	cand := copySlice(aSpring)
-	doHypothesize(cand, groups, cb, 0)
+type condPair struct {
+	damaged, operational int
 }
 
-func doHypothesize(aSpring spring, groups []int, cb func(spring), i int) {
+type condCounter struct {
+	target               condPair
+	status               condPair
+	seenOperationalCount int
+}
+
+func (v *condCounter) add(c condition, count int) bool {
+	switch c {
+	case condDamaged:
+		if v.status.damaged+count > v.target.damaged {
+			return false
+		}
+		v.status.damaged += count
+	case condOperational:
+		if v.status.operational+count > v.target.operational {
+			return false
+		}
+		v.status.operational += count
+	default:
+		return false
+	}
+	return true
+}
+
+func createCondCounter(aSpring spring, groups []int) *condCounter {
+	counter := &condCounter{}
+	counter.target.damaged = sumInts(groups)
+	counter.target.operational = len(aSpring) - counter.target.damaged
+	for _, each := range aSpring {
+		switch each {
+		case condDamaged:
+			counter.status.damaged++
+		case condOperational:
+			counter.status.operational++
+		default:
+			// Nothing to do.
+		}
+	}
+	return counter
+}
+
+func createPool(springSize int) *sync.Pool {
+	return &sync.Pool{
+		New: func() any {
+			s := make(spring, springSize)
+			return &s
+		},
+	}
+}
+
+func hypothesize(aSpring spring, groups []int, cb func(spring)) {
+	pool := createPool(len(aSpring))
+	cand := copySpring(pool, &aSpring)
+	counter := createCondCounter(*cand, groups)
+	doHypothesize(cand, groups, cb, 0, counter, pool)
+}
+
+func copySpring(pool *sync.Pool, aSpring *spring) *spring {
+	next, ok := pool.Get().(*spring)
+	if !ok {
+		panic("pool type check failed")
+	}
+	n := copy(*next, *aSpring)
+	if n != len(*aSpring) {
+		panic("count of copied items doesn't match")
+	}
+	return next
+}
+
+func sumInts(ints []int) (sum int) {
+	for _, each := range ints {
+		sum += each
+	}
+	return sum
+}
+
+//revive:disable-next-line:cyclomatic,cognitive-complexity,function-length
+func doHypothesize(
+	aSpringPtr *spring,
+	groups []int,
+	cb func(spring),
+	i int,
+	counter *condCounter,
+	pool *sync.Pool,
+) {
+	defer pool.Put(aSpringPtr)
+	aSpring := *aSpringPtr
 	for ; i < len(aSpring); i++ {
 		c := aSpring[i]
 		if c == condOperational {
+			counter.seenOperationalCount++
 			continue
 		} else if c == condUnknown {
-			for _, each := range []condition{condOperational, condDamaged} {
-				cand := copySlice(aSpring)
-				cand[i] = each
-				doHypothesize(cand, groups, cb, i)
+			if len(groups) == 0 {
+				if !counter.add(condOperational, 1) {
+					return
+				}
+				aSpring[i] = condOperational
+				counter.seenOperationalCount++
+				continue
+			}
+			var options []condition
+			if (counter.target.operational - counter.seenOperationalCount - (len(groups) - 1)) > 0 {
+				options = append(options, condOperational)
+			}
+			options = append(options, condDamaged)
+			for _, each := range options {
+				altered := *counter
+				if !altered.add(each, 1) {
+					continue
+				}
+				cand := copySpring(pool, aSpringPtr)
+				(*cand)[i] = each
+				doHypothesize(cand, groups, cb, i, &altered, pool)
 			}
 			return
 		} else if c == condDamaged {
@@ -150,17 +311,28 @@ func doHypothesize(aSpring spring, groups []int, cb func(spring), i int) {
 			end := i + groups[0]
 			if end > len(aSpring) {
 				return
+				//revive:disable-next-line:max-control-nesting
 			} else if end < len(aSpring) {
 				switch aSpring[end] {
 				case condDamaged:
 					return
-				case condUnknown, condOperational:
+				case condUnknown:
+					if !counter.add(condOperational, 1) {
+						return
+					}
 					aSpring[end] = condOperational
+					counter.seenOperationalCount++
+				case condOperational:
+					counter.seenOperationalCount++
 				default:
 					panic("unknown cond, x81")
 				}
 			}
-			if !fillSafelyWithDamaged(aSpring[i:end]) {
+			success, added := fillSafelyWithDamaged(aSpring[i:end])
+			if !success {
+				return
+			}
+			if !counter.add(condDamaged, added) {
 				return
 			}
 			i = end
@@ -172,16 +344,33 @@ func doHypothesize(aSpring spring, groups []int, cb func(spring), i int) {
 	}
 }
 
-func fillSafelyWithDamaged(aSpring spring) bool {
+func fillSafelyWithDamaged(aSpring spring) (success bool, added int) {
+	success = true
+mainLoop:
 	for i, c := range aSpring {
 		switch c {
 		case condOperational:
-			return false
-		case condUnknown, condDamaged:
+			success = false
+			break mainLoop
+		case condUnknown:
+			added++
 			aSpring[i] = condDamaged
+		case condDamaged:
+			// Nothing to do.
 		default:
 			panic("unknown cond")
 		}
 	}
-	return true
+	return
+}
+
+func pow(base, exp int) int {
+	if exp == 0 {
+		return 1
+	}
+	result := base
+	for range exp - 1 {
+		result *= base
+	}
+	return result
 }

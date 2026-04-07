@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of arrangement permutations: %d\n", aoc2312.SumPermutations(lines))
+	fmt.Println("Sum of arrangement permutations with multiplier:")
+	fmt.Printf("    1: %d\n", aoc2312.SumPermutations(lines, 1))
+	fmt.Printf("    5: %d\n", aoc2312.SumPermutations(lines, 5))
 	shared.Logger.Info("Done.")
 }
