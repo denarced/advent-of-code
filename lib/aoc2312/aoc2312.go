@@ -178,12 +178,6 @@ func multiplyGroups(groups []int, mul int) []int {
 	return result
 }
 
-func copySlice[S ~[]T, T any](s S) S {
-	copied := make(S, len(s))
-	copy(copied, s)
-	return copied
-}
-
 type condPair struct {
 	damaged, operational int
 }
@@ -194,22 +188,28 @@ type condCounter struct {
 	seenOperationalCount int
 }
 
-func (v *condCounter) add(c condition, count int) bool {
+func (v *condCounter) can(c condition, count int) bool {
 	switch c {
 	case condDamaged:
-		if v.status.damaged+count > v.target.damaged {
-			return false
-		}
-		v.status.damaged += count
+		return v.status.damaged+count <= v.target.damaged
 	case condOperational:
-		if v.status.operational+count > v.target.operational {
-			return false
-		}
-		v.status.operational += count
+		return v.status.operational+count <= v.target.operational
 	default:
 		return false
 	}
-	return true
+}
+
+func (v *condCounter) add(c condition, count int) {
+	if !v.can(c, count) {
+		panic("can't add")
+	}
+	if c == condDamaged {
+		v.status.damaged += count
+	} else if c == condOperational {
+		v.status.operational += count
+	} else {
+		panic("impossible: invalid condition type to add")
+	}
 }
 
 func createCondCounter(aSpring spring, groups []int) *condCounter {
@@ -242,7 +242,9 @@ func hypothesize(aSpring spring, groups []int, cb func(spring)) {
 	pool := createPool(len(aSpring))
 	cand := copySpring(pool, &aSpring)
 	counter := createCondCounter(*cand, groups)
-	doHypothesize(cand, groups, cb, 0, counter, pool)
+
+	hypoMach := createHypothesisMachine(cb, pool)
+	hypoMach.hypothesize(cand, groups, 0, counter)
 }
 
 func copySpring(pool *sync.Pool, aSpring *spring) *spring {
@@ -264,113 +266,126 @@ func sumInts(ints []int) (sum int) {
 	return sum
 }
 
-//revive:disable-next-line:cyclomatic,cognitive-complexity,function-length
-func doHypothesize(
+type hypothesisMachine struct {
+	cb   func(spring)
+	pool *sync.Pool
+}
+
+func createHypothesisMachine(cb func(spring), pool *sync.Pool) *hypothesisMachine {
+	return &hypothesisMachine{cb: cb, pool: pool}
+}
+
+func (v *hypothesisMachine) hypothesize(
 	aSpringPtr *spring,
 	groups []int,
-	cb func(spring),
 	i int,
 	counter *condCounter,
-	pool *sync.Pool,
 ) {
-	defer pool.Put(aSpringPtr)
+	defer v.pool.Put(aSpringPtr)
 	aSpring := *aSpringPtr
 	for ; i < len(aSpring); i++ {
 		c := aSpring[i]
-		if c == condOperational {
+		switch c {
+		case condOperational:
 			counter.seenOperationalCount++
 			continue
-		} else if c == condUnknown {
+		case condUnknown:
 			if len(groups) == 0 {
-				if !counter.add(condOperational, 1) {
+				if !counter.can(condOperational, 1) {
 					return
 				}
+				counter.add(condOperational, 1)
 				aSpring[i] = condOperational
 				counter.seenOperationalCount++
 				continue
 			}
-			var options []condition
-			if (counter.target.operational - counter.seenOperationalCount - (len(groups) - 1)) > 0 {
-				options = append(options, condOperational)
-			}
-			options = append(options, condDamaged)
-			for _, each := range options {
+
+			// Operational
+			if (counter.target.operational-counter.seenOperationalCount-(len(groups)-1)) > 0 &&
+				counter.can(condOperational, 1) {
 				altered := *counter
-				if !altered.add(each, 1) {
-					continue
-				}
-				cand := copySpring(pool, aSpringPtr)
-				(*cand)[i] = each
-				doHypothesize(cand, groups, cb, i, &altered, pool)
+				altered.add(condOperational, 1)
+				cand := copySpring(v.pool, aSpringPtr)
+				(*cand)[i] = condOperational
+				v.hypothesize(cand, groups, i, &altered)
 			}
-			return
-		} else if c == condDamaged {
-			if len(groups) == 0 {
+
+			// Damaged
+			unknownIndexes, ok := v.validateDamageToAdd(i, groups, aSpringPtr)
+			if !ok || !counter.can(condDamaged, len(unknownIndexes)) {
 				return
 			}
-			end := i + groups[0]
-			if end > len(aSpring) {
-				return
-				//revive:disable-next-line:max-control-nesting
-			} else if end < len(aSpring) {
-				switch aSpring[end] {
-				case condDamaged:
+			cand := copySpring(v.pool, aSpringPtr)
+			altered := *counter
+			altered.add(condDamaged, len(unknownIndexes))
+			for _, j := range unknownIndexes {
+				(*cand)[j] = condDamaged
+			}
+			nextIndex := i + groups[0]
+			if i+groups[0] < len(aSpring) && aSpring[i+groups[0]] == condUnknown {
+				nextIndex++
+				(*cand)[i+groups[0]] = condOperational
+				if !altered.can(condOperational, 1) {
 					return
-				case condUnknown:
-					if !counter.add(condOperational, 1) {
-						return
-					}
-					aSpring[end] = condOperational
-					counter.seenOperationalCount++
-				case condOperational:
-					counter.seenOperationalCount++
-				default:
-					panic("unknown cond, x81")
 				}
+				altered.add(condOperational, 1)
 			}
-			success, added := fillSafelyWithDamaged(aSpring[i:end])
-			if !success {
+			v.hypothesize(cand, groups[1:], nextIndex, &altered)
+			return
+		case condDamaged:
+			unknownIndexes, ok := v.validateDamageToAdd(i, groups, aSpringPtr)
+			if !ok {
 				return
 			}
-			if !counter.add(condDamaged, added) {
+			if !counter.can(condDamaged, len(unknownIndexes)) {
 				return
 			}
-			i = end
+			counter.add(condDamaged, len(unknownIndexes))
+			for _, j := range unknownIndexes {
+				aSpring[j] = condDamaged
+			}
+			nextIndex := i + groups[0] - 1
+			if i+groups[0] < len(aSpring) && aSpring[i+groups[0]] == condUnknown {
+				nextIndex++
+				aSpring[i+groups[0]] = condOperational
+			}
 			groups = groups[1:]
+			i = nextIndex
+		default:
+			panic("unknown type of cond")
 		}
 	}
 	if len(groups) == 0 {
-		cb(aSpring)
+		v.cb(aSpring)
 	}
 }
 
-func fillSafelyWithDamaged(aSpring spring) (success bool, added int) {
-	success = true
-mainLoop:
-	for i, c := range aSpring {
-		switch c {
+func (v *hypothesisMachine) validateDamageToAdd(
+	i int,
+	groups []int,
+	aSpringPtr *spring,
+) (indexes []int, ok bool) {
+	if len(groups) == 0 {
+		return
+	}
+	if i+groups[0] > len(*aSpringPtr) {
+		return
+	}
+	if i+groups[0] < len(*aSpringPtr) && (*aSpringPtr)[i+groups[0]] == condDamaged {
+		return
+	}
+	indexes = make([]int, 0, groups[0])
+	for j := i; j < i+groups[0]; j++ {
+		switch (*aSpringPtr)[j] {
 		case condOperational:
-			success = false
-			break mainLoop
+			indexes = nil
+			return
 		case condUnknown:
-			added++
-			aSpring[i] = condDamaged
-		case condDamaged:
-			// Nothing to do.
+			indexes = append(indexes, j)
 		default:
-			panic("unknown cond")
+			// Nothing to do.
 		}
 	}
+	ok = true
 	return
-}
-
-func pow(base, exp int) int {
-	if exp == 0 {
-		return 1
-	}
-	result := base
-	for range exp - 1 {
-		result *= base
-	}
-	return result
 }

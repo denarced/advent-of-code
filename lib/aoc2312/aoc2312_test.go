@@ -81,6 +81,17 @@ func TestCountPermutations(t *testing.T) {
 	run("#???#?????.?#?. 2,1,2,1", 87_489, 5)
 }
 
+func pow(base, exp int) int {
+	if exp == 0 {
+		return 1
+	}
+	result := base
+	for range exp - 1 {
+		result *= base
+	}
+	return result
+}
+
 func BenchmarkCountPermutations(b *testing.B) {
 	shared.InitNullLogging()
 	for range b.N {
