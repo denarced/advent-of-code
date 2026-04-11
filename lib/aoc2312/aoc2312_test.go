@@ -112,51 +112,30 @@ func BenchmarkCountPermutationsWithMultiplier(b *testing.B) {
 	}
 }
 
+func BenchmarkCaching(b *testing.B) {
+	shared.InitNullLogging()
+	for range b.N {
+		countPermutations(parseLine("?..?#?????.. 2,1"), 5)
+	}
+}
+
 func TestHypothesize(t *testing.T) {
-	run := func(s string, expected []string) {
+	run := func(s string, expected int) {
 		t.Run(s, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
 
-			var variants []spring
-			cb := func(s spring) {
-				copied := make(spring, len(s))
-				copy(copied, s)
-				variants = append(variants, copied)
-			}
 			parsed := parseLine(s)
 			// EXERCISE
-			hypothesize(parsed.springs, parsed.groups, cb)
+			count := hypothesize(parsed.springs, parsed.groups)
 
 			// VERIFY
-			req.Equal(stringify(expected), stringify(variants))
+			req.Equal(expected, count)
 		})
 	}
-	run("?##??.?#.????? 5,1,4",
-		[]string{
-			"#####..#..####",
-			"#####..#.####.",
-		})
-	run("???.### 1,1,3", []string{"#.#.###"})
-	run("?????#??????????# 6,1,6", []string{
-		"..######.#.######",
-		".######..#.######",
-		".######.#..######",
-		"######...#.######",
-		"######..#..######",
-		"######.#...######",
-	})
-}
-
-func stringify[S ~[]T, T any](s S) (result []string) {
-	if s == nil {
-		return
-	}
-	result = make([]string, len(s))
-	for i, each := range s {
-		result[i] = fmt.Sprint(each)
-	}
-	return
+	run("?##??.?#.????? 5,1,4", 2)
+	run("???.### 1,1,3", 1)
+	run("?????#??????????# 6,1,6", 6)
 }
 
 func TestMultiplySpring(t *testing.T) {

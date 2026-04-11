@@ -128,28 +128,23 @@ func parseSpring(s string) spring {
 	return aSpring
 }
 
-func createCounter() (*int, func(spring)) {
-	var count int
-	return &count, func(_ spring) {
-		count++
-	}
-}
-
 func countPermutations(row springRow, mul int) int {
 	if shared.IsDebugEnabled() {
 		shared.Logger.Debug("Count permutations.", "row", row, "multiplier", mul)
 	}
-	count, counter := createCounter()
 	alpha := time.Now()
-	hypothesize(multiplySpring(row.springs, mul), multiplyGroups(row.groups, mul), counter)
+	count := hypothesize(
+		multiplySpring(row.springs, mul),
+		multiplyGroups(row.groups, mul),
+	)
 	shared.Logger.Info(
 		"Permutations counted.",
-		"count", *count,
+		"count", count,
 		"row", row,
 		"multiplier", mul,
 		"duration", time.Since(alpha),
 	)
-	return *count
+	return count
 }
 
 func multiplySpring(s spring, mul int) spring {
@@ -203,11 +198,12 @@ func (v *condCounter) add(c condition, count int) {
 	if !v.can(c, count) {
 		panic("can't add")
 	}
-	if c == condDamaged {
+	switch c {
+	case condDamaged:
 		v.status.damaged += count
-	} else if c == condOperational {
+	case condOperational:
 		v.status.operational += count
-	} else {
+	default:
 		panic("impossible: invalid condition type to add")
 	}
 }
@@ -238,13 +234,13 @@ func createPool(springSize int) *sync.Pool {
 	}
 }
 
-func hypothesize(aSpring spring, groups []int, cb func(spring)) {
+func hypothesize(aSpring spring, groups []int) int {
 	pool := createPool(len(aSpring))
 	cand := copySpring(pool, &aSpring)
 	counter := createCondCounter(*cand, groups)
 
-	hypoMach := createHypothesisMachine(cb, pool)
-	hypoMach.hypothesize(cand, groups, 0, counter)
+	hypoMach := createHypothesisMachine(pool)
+	return hypoMach.hypothesize(cand, groups, 0, counter)
 }
 
 func copySpring(pool *sync.Pool, aSpring *spring) *spring {
@@ -267,22 +263,33 @@ func sumInts(ints []int) (sum int) {
 }
 
 type hypothesisMachine struct {
-	cb   func(spring)
-	pool *sync.Pool
+	pool  *sync.Pool
+	cache map[uint64]int
 }
 
-func createHypothesisMachine(cb func(spring), pool *sync.Pool) *hypothesisMachine {
-	return &hypothesisMachine{cb: cb, pool: pool}
+func createHypothesisMachine(pool *sync.Pool) *hypothesisMachine {
+	return &hypothesisMachine{pool: pool, cache: map[uint64]int{}}
 }
 
+//revive:disable-next-line:function-length,cyclomatic,cognitive-complexity
 func (v *hypothesisMachine) hypothesize(
 	aSpringPtr *spring,
 	groups []int,
 	i int,
 	counter *condCounter,
-) {
+) (count int) {
 	defer v.pool.Put(aSpringPtr)
 	aSpring := *aSpringPtr
+	alphaI := i
+	var cacheKey uint64
+	// No point in adding or using cache at the end. Impossible to be of any use.
+	if i < len(aSpring) && aSpring[i] != condUnknown {
+		cacheKey = hash([]int{i, len(groups), int(aSpring[i])})
+		if cachedCount, ok := v.cache[cacheKey]; ok {
+			shared.Logger.Debug("Cache hit.", "i", i, "key", cacheKey, "count", cachedCount)
+			return cachedCount
+		}
+	}
 	for ; i < len(aSpring); i++ {
 		c := aSpring[i]
 		switch c {
@@ -307,7 +314,9 @@ func (v *hypothesisMachine) hypothesize(
 				altered.add(condOperational, 1)
 				cand := copySpring(v.pool, aSpringPtr)
 				(*cand)[i] = condOperational
-				v.hypothesize(cand, groups, i, &altered)
+				count += v.hypothesize(cand, groups, i, &altered)
+				cacheKey := hash([]int{i, len(groups), int(condOperational)})
+				v.cache[cacheKey] = count
 			}
 
 			// Damaged
@@ -330,23 +339,29 @@ func (v *hypothesisMachine) hypothesize(
 				}
 				altered.add(condOperational, 1)
 			}
-			v.hypothesize(cand, groups[1:], nextIndex, &altered)
+			count += v.hypothesize(cand, groups[1:], nextIndex, &altered)
+			cacheKey := hash([]int{i, len(groups), int(condDamaged)})
+			v.cache[cacheKey] = count
 			return
 		case condDamaged:
 			unknownIndexes, ok := v.validateDamageToAdd(i, groups, aSpringPtr)
-			if !ok {
+			if !ok || !counter.can(condDamaged, len(unknownIndexes)) {
 				return
 			}
-			if !counter.can(condDamaged, len(unknownIndexes)) {
-				return
+			nextIndex := i + groups[0] - 1
+			dotNeeded := i+groups[0] < len(aSpring) && aSpring[i+groups[0]] == condUnknown
+			if dotNeeded {
+				nextIndex++
+				if !counter.can(condOperational, 1) {
+					return
+				}
 			}
 			counter.add(condDamaged, len(unknownIndexes))
 			for _, j := range unknownIndexes {
 				aSpring[j] = condDamaged
 			}
-			nextIndex := i + groups[0] - 1
-			if i+groups[0] < len(aSpring) && aSpring[i+groups[0]] == condUnknown {
-				nextIndex++
+			if dotNeeded {
+				counter.add(condOperational, 1)
 				aSpring[i+groups[0]] = condOperational
 			}
 			groups = groups[1:]
@@ -356,11 +371,20 @@ func (v *hypothesisMachine) hypothesize(
 		}
 	}
 	if len(groups) == 0 {
-		v.cb(aSpring)
+		count++
 	}
+	if cacheKey > 0 {
+		shared.Logger.Debug(
+			"Write cache.",
+			"key", cacheKey,
+			"count", count,
+			"i", alphaI)
+		v.cache[cacheKey] = count
+	}
+	return
 }
 
-func (v *hypothesisMachine) validateDamageToAdd(
+func (*hypothesisMachine) validateDamageToAdd(
 	i int,
 	groups []int,
 	aSpringPtr *spring,
@@ -388,4 +412,12 @@ func (v *hypothesisMachine) validateDamageToAdd(
 	}
 	ok = true
 	return
+}
+
+func hash(s []int) uint64 {
+	var h uint64 = 17
+	for _, v := range s {
+		h = h*31 + uint64(v)
+	}
+	return h
 }
