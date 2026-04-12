@@ -526,3 +526,10 @@ func SplitToBlocks(lines []string) [][]string {
 	}
 	return blocks
 }
+
+func SubString(s string, length int) string {
+	if len(s) < length {
+		return s
+	}
+	return s[:length]
+}
