@@ -15,3 +15,14 @@ func TestCountTotalLoad(t *testing.T) {
 	req.NoError(err)
 	req.Equal(136, CountTotalLoad(lines))
 }
+
+func BenchmarkCountTotalLoad(b *testing.B) {
+	shared.InitNullLogging()
+	req := require.New(b)
+	lines, err := inr.ReadPath("testdata/in.txt")
+	req.NoError(err)
+
+	for range b.N {
+		CountTotalLoad(lines)
+	}
+}
