@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of reflections: %d\n", aoc2313.SumReflections(lines))
+	fmt.Println("Sum of reflections:")
+	fmt.Printf("    With smudges:    %d\n", aoc2313.SumReflections(lines, false))
+	fmt.Printf("    Without smudges: %d\n", aoc2313.SumReflections(lines, true))
 	shared.Logger.Info("Done.")
 }
