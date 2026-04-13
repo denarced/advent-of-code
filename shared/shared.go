@@ -533,3 +533,12 @@ func SubString(s string, length int) string {
 	}
 	return s[:length]
 }
+
+// Hash with DJB2.
+func Hash(s []int) uint64 {
+	var h uint64 = 5381
+	for _, v := range s {
+		h = h*33 + uint64(v)
+	}
+	return h
+}

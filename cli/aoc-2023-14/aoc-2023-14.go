@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Total load: %d\n", aoc2314.CountTotalLoad(lines))
+	fmt.Println("Total load:")
+	fmt.Printf("    Just north:     %d\n", aoc2314.CountTotalLoad(lines, 0))
+	fmt.Printf("    Billion cycles: %d\n", aoc2314.CountTotalLoad(lines, 1_000_000_000))
 	shared.Logger.Info("Done.")
 }
