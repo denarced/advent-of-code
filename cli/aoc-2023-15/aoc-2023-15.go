@@ -17,6 +17,7 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Hash sum: %d\n", aoc2315.SumHashes(lines))
+	fmt.Printf("Hash sum:       %d\n", aoc2315.SumHashes(lines))
+	fmt.Printf("Focusing power: %d\n", aoc2315.DeriveFocusingPower(lines))
 	shared.Logger.Info("Done.")
 }
