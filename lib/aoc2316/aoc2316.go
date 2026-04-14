@@ -1,9 +1,6 @@
 package aoc2316
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/denarced/advent-of-code/shared"
 	"github.com/denarced/gent"
 )
@@ -21,23 +18,64 @@ type bean struct {
 	dir shared.Direction
 }
 
+func FindMaxEnergizedTileCount(lines []string) int {
+	shared.Logger.Info("Find start location with most energized tiles.")
+	brd := shared.NewBoard(lines)
+	maxCount := -1
+	try := func(x, y int, dir shared.Direction) {
+		count := CountEnergizedTilesWithStart(brd, shared.Loc{X: x, Y: y}, dir)
+		maxCount = max(maxCount, count)
+	}
+	for _, x := range []int{-1, brd.GetWidth()} {
+		for y := range brd.GetHeight() {
+			dir := shared.RealWest
+			if x < 0 {
+				dir = shared.RealEast
+			}
+			try(x, y, dir)
+		}
+	}
+	for _, y := range []int{-1, brd.GetHeight()} {
+		for x := range brd.GetWidth() {
+			dir := shared.RealSouth
+			if y < 0 {
+				dir = shared.RealNorth
+			}
+			try(x, y, dir)
+		}
+	}
+	shared.Logger.Info("Maximum tile count found.", "count", maxCount)
+	return maxCount
+}
+
 func CountEnergizedTiles(lines []string) int {
 	brd := shared.NewBoard(lines)
+	// Need to start outside the board because the first cell might be a mirror. The logic would in
+	// that case if this starts with X=0.
+	return CountEnergizedTilesWithStart(
+		brd,
+		shared.Loc{X: -1, Y: brd.GetHeight() - 1},
+		shared.RealEast,
+	)
+}
+
+func CountEnergizedTilesWithStart(
+	brd *shared.Board,
+	startLoc shared.Loc,
+	startDir shared.Direction,
+) int {
 	shared.Logger.Info(
 		"Count energized tiles.",
 		"width", brd.GetWidth(),
-		"height", brd.GetHeight())
-	// Need to start outside the board because the first cell might be a mirror. The logic would in
-	// that case if this starts with X=0.
-	aBean := bean{
-		loc: shared.Loc{X: -1, Y: brd.GetHeight() - 1},
-		dir: shared.RealEast,
-	}
+		"height", brd.GetHeight(),
+		"start location", startLoc,
+		"start direction", startDir)
+	aBean := bean{loc: startLoc, dir: startDir}
 	energonized := gent.NewSet[bean]()
 	var backlog []bean
 	pickFromBacklog := func() (bean, bool) {
 		if len(backlog) == 0 {
-			shared.Logger.Info("Nothing in backlog, stopping.")
+			shared.Logger.Debug("Nothing in backlog, stopping.")
 			return bean{}, false
 		}
 		aBean = backlog[0]
@@ -128,18 +166,7 @@ func CountEnergizedTiles(lines []string) int {
 		locations.Add(each.loc)
 	})
 
-	// visualizeEnergized(locations, brd.GetWidth(), brd.GetHeight())
-	return locations.Count()
-}
-
-func visualizeEnergized(locations *gent.Set[shared.Loc], width, height int) {
-	table := make([]string, height)
-	for i := range height {
-		table[i] = strings.Repeat(".", width)
-	}
-	brd := shared.NewBoard(table)
-	locations.ForEachAll(func(loc shared.Loc) {
-		brd.Set(loc, '#')
-	})
-	fmt.Println(strings.Join(brd.GetLines(), "\n"))
+	count := locations.Count()
+	shared.Logger.Info("Energized tiles counted.", "count", count)
+	return count
 }

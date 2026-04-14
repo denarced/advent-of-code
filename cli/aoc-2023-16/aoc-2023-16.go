@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Energized tile count: %d\n", aoc2316.CountEnergizedTiles(lines))
+	fmt.Println("Energized tile count:")
+	fmt.Printf("    NW to East: %d\n", aoc2316.CountEnergizedTiles(lines))
+	fmt.Printf("    Best      : %d\n", aoc2316.FindMaxEnergizedTileCount(lines))
 	shared.Logger.Info("Done.")
 }
