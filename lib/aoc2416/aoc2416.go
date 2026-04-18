@@ -75,8 +75,8 @@ func CountLowestScore(lines []string, drawWinners bool) (minPoints int, seatCoun
 		if drawWinners {
 			draw(lines, winner.steps)
 		}
-		for step := winner.steps; step != nil; step = step.parent {
-			bestSeats.Add(step.item)
+		for step := winner.steps; step != nil; step = step.Parent {
+			bestSeats.Add(step.Item)
 		}
 	}
 	seatCount = bestSeats.Count()
@@ -95,7 +95,7 @@ func count(
 	runners := &queue[runner]{
 		s: []runner{{
 			vec:   vector{loc: start, dir: shared.RealEast},
-			steps: addLink(nil, start),
+			steps: shared.AddLink(nil, start),
 		}},
 	}
 	includeAllWinners := len(breaker.m) > 0
@@ -129,7 +129,7 @@ func count(
 			copied.points += derivePoints(copied.vec.dir, each.dir)
 			nextLoc := each.loc.Delta(shared.Loc(each.dir))
 			copied.vec.loc = nextLoc
-			copied.steps = addLink(copied.steps, nextLoc)
+			copied.steps = shared.AddLink(copied.steps, nextLoc)
 			copied.vec.dir = each.dir
 			runners.add(copied)
 		}
@@ -145,7 +145,7 @@ type vector struct {
 type runner struct {
 	points int
 	vec    vector
-	steps  *link[shared.Loc]
+	steps  *shared.Link[shared.Loc]
 }
 
 func getPossibleVectors(
@@ -217,14 +217,14 @@ func (v *pointBreak) isHigher(vec vector, points int) bool {
 	return true
 }
 
-func draw(lines []string, step *link[shared.Loc]) {
+func draw(lines []string, step *shared.Link[shared.Loc]) {
 	nanos := time.Now().UnixNano()
 	dirp := fmt.Sprintf("/tmp/aoc16/%d", nanos)
 	err := os.MkdirAll(dirp, 0755)
 	shared.Die(err, "Failed to create draw dir.")
 	brd := shared.NewBoard(append([]string{}, lines...))
-	for ; step != nil; step = step.parent {
-		brd.Set(step.item, 'O')
+	for ; step != nil; step = step.Parent {
+		brd.Set(step.Item, 'O')
 	}
 	content := strings.Join(brd.GetLines(), "\n") + "\n"
 	filep := filepath.Join(dirp, "board.txt")
@@ -272,17 +272,5 @@ func derivePossibleDirections(
 		shared.RealSouth: getPossibleDirections(all, shared.RealSouth),
 		shared.RealWest:  getPossibleDirections(all, shared.RealWest),
 		shared.RealNorth: getPossibleDirections(all, shared.RealNorth),
-	}
-}
-
-type link[T any] struct {
-	item   T
-	parent *link[T]
-}
-
-func addLink[T any](parent *link[T], item T) *link[T] {
-	return &link[T]{
-		item:   item,
-		parent: parent,
 	}
 }

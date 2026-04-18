@@ -313,12 +313,34 @@ func (v *Board) Get(loc Loc) (c rune, ok bool) {
 	return
 }
 
+func (v *Board) GetInt(loc Loc) (i int, ok bool) {
+	var c rune
+	c, ok = v.Get(loc)
+	if !ok {
+		return
+	}
+	i = int(c - '0')
+	if i < 0 || 9 < i {
+		panic("not a number, GetInt fails")
+	}
+	return
+}
+
 func (v *Board) GetOrDie(loc Loc) rune {
 	c, ok := v.Get(loc)
 	if !ok {
 		panic(fmt.Sprintf("Can't find %v.", loc))
 	}
 	return c
+}
+
+func (v *Board) GetIntOrDie(loc Loc) int {
+	c := v.GetOrDie(loc)
+	i := int(c - '0')
+	if i < 0 || 9 < i {
+		panic("not a number, GetIntOrDie fails")
+	}
+	return i
 }
 
 func (v *Board) Set(loc Loc, c rune) {
@@ -541,4 +563,18 @@ func Hash(s []int) uint64 {
 		h = h*33 + uint64(v)
 	}
 	return h
+}
+
+// Link is a link in a linked list.
+type Link[T any] struct {
+	Item   T
+	Parent *Link[T]
+}
+
+// AddLink adds a new link to a linked list.
+func AddLink[T any](parent *Link[T], item T) *Link[T] {
+	return &Link[T]{
+		Item:   item,
+		Parent: parent,
+	}
 }
