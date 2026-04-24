@@ -315,11 +315,18 @@ func revertCoordinates(coords [][]int, height int) [][]int {
 	return reverted
 }
 
+type record struct {
+	dir      shared.Direction
+	velocity int
+	sum      int
+}
+
 type sumHasher struct {
-	// Avoid unnecessary hashing by storing coordinates separate here, those
-	// that have a sum in m.
-	s [][]int
-	m map[uint64]int
+	// Avoid expensive operations by storing coordinates separately here,
+	// those that have records in recs.
+	s     [][]int
+	recs  [][]record
+	width int
 }
 
 func newSumHasher(width, height int) *sumHasher {
@@ -327,18 +334,19 @@ func newSumHasher(width, height int) *sumHasher {
 	for i := range height {
 		s[i] = make([]int, width)
 	}
-	return &sumHasher{m: map[uint64]int{}, s: s}
+	recs := make([][]record, width*height)
+	return &sumHasher{s: s, recs: recs, width: width}
+}
+
+func (v *sumHasher) deriveRecordIndex(loc shared.Loc) int {
+	return loc.Y*v.width + loc.X
 }
 
 func (v *sumHasher) isOver(r *runner) bool {
 	if v.s[r.latestHop.loc.Y][r.latestHop.loc.X] == 0 {
 		return false
 	}
-	_, current, ok := v.hash(r.latestHop.loc, r.latestHop.dir, v.deriveArrowValue(r.arrow))
-	if ok {
-		return r.sum > current
-	}
-	return false
+	return v.isOverWithDetails(r.sum, r.latestHop.loc, r.latestHop.dir, v.deriveArrowValue(r.arrow))
 }
 
 func (*sumHasher) deriveArrowValue(arrow shared.Loc) int {
@@ -357,52 +365,48 @@ func (v *sumHasher) isOverWithDetails(
 	if v.s[loc.Y][loc.X] == 0 {
 		return false
 	}
-	_, current, ok := v.hash(loc, dir, arrow)
-	if ok {
-		return sum > current
+	recIndex := v.deriveRecordIndex(loc)
+	locRecs := v.recs[recIndex]
+	if len(locRecs) == 0 {
+		return false
+	}
+	for _, each := range locRecs {
+		if each.dir == dir {
+			if sum > each.sum && arrow >= each.velocity {
+				return true
+			}
+		}
 	}
 	return false
 }
 
-func (v *sumHasher) hash(
-	loc shared.Loc,
-	dir shared.Direction,
-	arrow int,
-) (hashSum uint64, sum int, ok bool) {
-	hashSum = hashInts(
-		[]int{
-			loc.X,
-			loc.Y,
-			dir.X,
-			dir.Y,
-			arrow,
-		})
-	sum, ok = v.m[hashSum]
-	return
-}
-
-func hashInts(arr []int) uint64 {
-	// FNV-1a constants
-	var hash uint64 = 14695981039346656037
-	const prime uint64 = 1099511628211
-
-	for _, v := range arr {
-		hash ^= uint64(v)
-		hash *= prime
-	}
-	return hash
-}
-
 func (v *sumHasher) set(aHop hop, arrow shared.Loc, sum int) {
-	h, current, ok := v.hash(aHop.loc, aHop.dir, v.deriveArrowValue(arrow))
-	if ok && current < sum {
-		shared.Logger.Error("Attempt to increase sum in hasher.",
-			"hop", aHop,
-			"arrow", arrow,
-			"sum", sum,
-			"current sum", current)
-		panic("can't increase heat in hasher")
+	recIndex := v.deriveRecordIndex(aHop.loc)
+	locRecs := v.recs[recIndex]
+	index := -1
+	arrowValue := v.deriveArrowValue(arrow)
+	for i, each := range locRecs {
+		if each.dir == aHop.dir && arrowValue == each.velocity {
+			if each.sum < sum {
+				shared.Logger.Error("Attempt to increase sum in hasher.",
+					"hop", aHop,
+					"arrow", arrow,
+					"sum", sum,
+					"current sum", each.sum)
+				panic("can't increase heat in hasher")
+			}
+			index = i
+		}
 	}
-	v.m[h] = sum
+	if index >= 0 {
+		locRecs[index].sum = sum
+		return
+	}
+
+	v.recs[recIndex] = append(v.recs[recIndex], record{
+		dir:      aHop.dir,
+		velocity: arrowValue,
+		sum:      sum,
+	})
 	v.s[aHop.loc.Y][aHop.loc.X] = 1
 }
