@@ -134,6 +134,9 @@ func findMinimumHeat(brd *shared.Board, target shared.Loc) int {
 		}
 	}
 
+	// Cut total duration of aoc-2023-17 to about half by not constantly creating new slices of
+	// hops.
+	hops := make([]hop, 0, 3)
 	for len(runners) > 0 {
 		aRunner := runners[0]
 		runners = runners[1:]
@@ -141,7 +144,8 @@ func findMinimumHeat(brd *shared.Board, target shared.Loc) int {
 			if shouldStop(aRunner, hasher, target, minHeat) {
 				break
 			}
-			hops := filterHops(hasher, aRunner, brd, deriveNextHops(brd, aRunner))
+			hops = hops[:0]
+			hops = filterHops(hasher, aRunner, brd, deriveNextHops(brd, aRunner, hops))
 			if len(hops) == 0 {
 				break
 			}
@@ -202,9 +206,8 @@ func measureDistance(a, b shared.Loc) int {
 	return x + y
 }
 
-func deriveNextHops(brd *shared.Board, aRunner *runner) []hop {
+func deriveNextHops(brd *shared.Board, aRunner *runner, hops []hop) []hop {
 	straight := aRunner.latestHop.loc.Delta(shared.Loc(aRunner.latestHop.dir))
-	var hops []hop
 	if _, ok := brd.Get(straight); ok {
 		if !(aRunner.latestHop.dir.X != 0 && shared.Abs(aRunner.arrow.X) >= maxJump) &&
 			!(aRunner.latestHop.dir.Y != 0 && shared.Abs(aRunner.arrow.Y) >= maxJump) {
@@ -296,13 +299,14 @@ func filterHops(
 	aRunner *runner,
 	brd *shared.Board,
 	candidates []hop,
-) (result []hop) {
-	for _, each := range candidates {
-		if !hasher.isOverWithDetails(aRunner.sum+brd.GetIntOrDie(each.loc), each.loc, each.dir, 1) {
-			result = append(result, each)
+) []hop {
+	for i := len(candidates) - 1; i >= 0; i-- {
+		each := candidates[i]
+		if hasher.isOverWithDetails(aRunner.sum+brd.GetIntOrDie(each.loc), each.loc, each.dir, 1) {
+			candidates = append(candidates[:i], candidates[i+1:]...)
 		}
 	}
-	return
+	return candidates
 }
 
 func revertCoordinates(coords [][]int, height int) [][]int {

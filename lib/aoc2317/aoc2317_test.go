@@ -119,8 +119,9 @@ func TestDeriveNextHops(t *testing.T) {
 				"012345",
 			})
 			aRunner := &runner{latestHop: latest, arrow: arrow}
+			hops := make([]hop, 0, 3)
 			// EXERCISE
-			hops := deriveNextHops(brd, aRunner)
+			hops = deriveNextHops(brd, aRunner, hops)
 
 			// VERIFY
 			req.Equal(expected, hops)
