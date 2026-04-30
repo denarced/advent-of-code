@@ -2,10 +2,6 @@ package aoc2317
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/denarced/advent-of-code/shared"
@@ -14,13 +10,21 @@ import (
 )
 
 func TestDeriveLeastHeatLoss(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
+	run := func(minJump, maxJump, expected int) {
+		name := fmt.Sprintf("%d - %d", minJump, maxJump)
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
 
-	lines, err := inr.ReadPath("testdata/in.txt")
-	req.NoError(err)
+			lines, err := inr.ReadPath("testdata/in.txt")
+			req.NoError(err)
 
-	req.Equal(102, DeriveLeastHeatLoss(lines))
+			req.Equal(expected, DeriveLeastHeatLoss(lines, minJump, maxJump))
+		})
+	}
+
+	run(1, 3, 102)
+	run(4, 10, 94)
 }
 
 func BenchmarkDeriveLeastHeatLoss(b *testing.B) {
@@ -28,59 +32,8 @@ func BenchmarkDeriveLeastHeatLoss(b *testing.B) {
 	lines, _ := inr.ReadPath("testdata/in.txt")
 
 	for range b.N {
-		DeriveLeastHeatLoss(lines)
+		DeriveLeastHeatLoss(lines, 1, 3)
 	}
-}
-
-type testCase struct {
-	name     string
-	lines    []string
-	expected int
-}
-
-func TestDeriveLeastHeatLossCases(t *testing.T) {
-	run := func(name string, lines []string, expected int) {
-		t.Run(name, func(t *testing.T) {
-			shared.InitTestLogging(t)
-			req := require.New(t)
-			least := DeriveLeastHeatLoss(lines)
-			if expected > 0 {
-				req.Equal(expected, least)
-			} else {
-				req.Less(least, 1_000)
-			}
-		})
-	}
-
-	for _, each := range readTestCases(require.New(t)) {
-		run(each.name, each.lines, each.expected)
-	}
-}
-
-func readTestCases(req *require.Assertions) (cases []testCase) {
-	dirp := "testdata/gen"
-	entries, err := os.ReadDir(dirp)
-	req.NoError(err, "failed to read gen dir")
-	for _, each := range entries {
-		if each.IsDir() {
-			continue
-		}
-		if !strings.HasSuffix(each.Name(), ".txt") {
-			continue
-		}
-		filep := filepath.Join(dirp, each.Name())
-		b, err := os.ReadFile(filep)
-		req.NoErrorf(err, "failed to read file %s", filep)
-		lines := strings.Split(strings.TrimSpace(string(b)), "\n")
-		sum, err := strconv.Atoi(strings.Split(lines[0], ":")[1])
-		req.NoErrorf(err, "failed to convert test case sum to int")
-		cases = append(cases, testCase{
-			name:     each.Name(),
-			lines:    lines[1:],
-			expected: sum,
-		})
-	}
-	return
 }
 
 func TestBetween(t *testing.T) {
@@ -88,7 +41,10 @@ func TestBetween(t *testing.T) {
 		name := fmt.Sprintf("%v -> %v", from, to)
 		t.Run(name, func(t *testing.T) {
 			req := require.New(t)
-			steps := between(from, to)
+			var steps []shared.Loc
+			doInBetween(from, to, func(loc shared.Loc) {
+				steps = append(steps, loc)
+			})
 			req.Equal(expected, steps)
 		})
 	}
@@ -108,7 +64,7 @@ func TestBetween(t *testing.T) {
 }
 
 func TestDeriveNextHops(t *testing.T) {
-	run := func(name string, latest hop, arrow shared.Loc, expected []hop) {
+	run := func(name string, latest hop, expected []hop) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
@@ -118,10 +74,10 @@ func TestDeriveNextHops(t *testing.T) {
 				"012345",
 				"012345",
 			})
-			aRunner := &runner{latestHop: latest, arrow: arrow}
+			aRunner := &runner{latestHop: latest}
 			hops := make([]hop, 0, 3)
 			// EXERCISE
-			hops = deriveNextHops(brd, aRunner, hops)
+			hops = deriveNextHops(brd, aRunner, hops, 1, 3)
 
 			// VERIFY
 			req.Equal(expected, hops)
@@ -131,60 +87,37 @@ func TestDeriveNextHops(t *testing.T) {
 	run(
 		"happy path X",
 		hop{loc: shared.Loc{X: 4, Y: 1}, dir: shared.RealEast},
-		shared.Loc{X: 2},
 		[]hop{
-			{
-				loc: shared.Loc{X: 5, Y: 1},
-				dir: shared.Direction{X: 1},
-			},
-			{
-				loc: shared.Loc{X: 4, Y: 2},
-				dir: shared.Direction{Y: 1},
-			},
-			{
-				loc: shared.Loc{X: 4, Y: 0},
-				dir: shared.Direction{Y: -1},
-			},
+			{loc: shared.Loc{X: 5, Y: 1}, dir: shared.RealNorth},
+			{loc: shared.Loc{X: 5, Y: 1}, dir: shared.RealSouth},
+			{loc: shared.Loc{X: 5, Y: 1}, dir: shared.RealEast},
 		})
 	run(
 		"happy path Y",
 		hop{loc: shared.Loc{X: 3, Y: 1}, dir: shared.RealNorth},
-		shared.Loc{Y: 1},
 		[]hop{
-			{
-				loc: shared.Loc{X: 3, Y: 2},
-				dir: shared.RealNorth,
-			},
-			{
-				loc: shared.Loc{X: 2, Y: 1},
-				dir: shared.RealWest,
-			},
-			{
-				loc: shared.Loc{X: 4, Y: 1},
-				dir: shared.RealEast,
-			},
+			{loc: shared.Loc{X: 3, Y: 2}, dir: shared.RealWest},
+			{loc: shared.Loc{X: 3, Y: 2}, dir: shared.RealEast},
+			{loc: shared.Loc{X: 3, Y: 2}, dir: shared.RealNorth},
 		})
+	run("dead end X", hop{loc: shared.Loc{}, dir: shared.RealWest}, []hop{})
+	run("dead end Y", hop{loc: shared.Loc{X: 5, Y: 2}, dir: shared.RealEast}, []hop{})
 	run(
-		"dead end X",
-		hop{loc: shared.Loc{}, dir: shared.RealWest},
-		shared.Loc{X: 1},
-		[]hop{{loc: shared.Loc{Y: 1}, dir: shared.RealNorth}})
-	run(
-		"dead end Y",
-		hop{loc: shared.Loc{X: 5, Y: 2}, dir: shared.RealEast},
-		shared.Loc{Y: 2},
-		[]hop{{loc: shared.Loc{X: 5, Y: 1}, dir: shared.RealSouth}})
-	run(
-		"blocked straight X",
-		hop{loc: shared.Loc{X: 2}, dir: shared.RealEast},
-		shared.Loc{X: 3},
-		[]hop{{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealNorth}})
-	run(
-		"blocked straight Y",
-		hop{loc: shared.Loc{X: 1, Y: 1}, dir: shared.RealSouth},
-		shared.Loc{Y: 3},
+		"long",
+		hop{
+			loc: shared.Loc{X: 0, Y: 1},
+			dir: shared.RealEast,
+		},
 		[]hop{
-			{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealEast},
-			{loc: shared.Loc{X: 0, Y: 1}, dir: shared.RealWest},
+			{loc: shared.Loc{X: 1, Y: 1}, dir: shared.RealNorth},
+			{loc: shared.Loc{X: 1, Y: 1}, dir: shared.RealSouth},
+
+			{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealNorth},
+			{loc: shared.Loc{X: 2, Y: 1}, dir: shared.RealSouth},
+
+			{loc: shared.Loc{X: 3, Y: 1}, dir: shared.RealNorth},
+			{loc: shared.Loc{X: 3, Y: 1}, dir: shared.RealSouth},
+
+			{loc: shared.Loc{X: 3, Y: 1}, dir: shared.RealEast},
 		})
 }

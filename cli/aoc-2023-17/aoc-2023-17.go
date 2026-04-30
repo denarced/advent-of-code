@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Least heat loss: %d\n", aoc2317.DeriveLeastHeatLoss(lines))
+	fmt.Println("Least heat loss:")
+	fmt.Printf("    Normal: %d\n", aoc2317.DeriveLeastHeatLoss(lines, 1, 3))
+	fmt.Printf("    Ultra: %d\n", aoc2317.DeriveLeastHeatLoss(lines, 4, 10))
 	shared.Logger.Info("Done.")
 }
