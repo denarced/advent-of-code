@@ -15,11 +15,7 @@ func TestDig(t *testing.T) {
 	run := func(name string, lines []string, expected int) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
-			req := require.New(t)
-
-			dug := Dig(lines)
-
-			req.Equal(expected, dug)
+			require.Equal(t, expected, Dig(lines, false))
 		})
 	}
 
@@ -33,6 +29,7 @@ func TestDig(t *testing.T) {
 			"U 2 ()",
 		},
 		9)
+
 	run(
 		//   ###
 		//   # #
@@ -57,6 +54,7 @@ func TestDig(t *testing.T) {
 			"U 2 ()",
 		},
 		33)
+
 	run(
 		// ###       |
 		// # # ###   |
@@ -90,6 +88,7 @@ func TestDig(t *testing.T) {
 			"U 7 ()",
 		},
 		90-2-5-10-3-2-6)
+
 	run(
 		// ######    |
 		// #    ##   |
@@ -116,6 +115,78 @@ func TestDig(t *testing.T) {
 			"U 4 ()",
 		},
 		36)
+
+	// 6 ####
+	// 5 #..#
+	// 4 ##.#
+	// 3 .#.#
+	// 2 ##.#
+	// 1 #..#
+	// 0 ####
+	//   0123
+	// Problem because code failed to include 1x3.
+	run(
+		"problem",
+		[]string{
+			"U 2 ()",
+			"R 1 ()",
+			"U 2 ()",
+			"L 1 ()",
+			"U 2 ()",
+			"R 3 ()",
+			"D 6 ()",
+			"L 3 ()",
+		},
+		27)
+
+	run(
+		"3x3 square",
+		[]string{
+			"R 2 ()",
+			"D 2 ()",
+			"L 2 ()",
+			"U 2 ()",
+		},
+		9)
+
+	//  1 .##
+	//  0 ###
+	// -1 #.#
+	// -2 ###
+	//    012
+	run(
+		"simple complex",
+		[]string{
+			"R 1 ()",
+			"U 1 ()",
+			"R 1 ()",
+			"D 3 ()",
+			"L 2 ()",
+			"U 2 ()",
+		},
+		11)
+
+	//  1 .####..
+	//  0 ##..#..
+	// -1 #...###
+	// -2 ###...#
+	// -3 ..#####
+	//    0123456
+	run(
+		"complex",
+		[]string{
+			"R 1 ()",
+			"U 1 ()",
+			"R 3 ()",
+			"D 2 ()",
+			"R 2 ()",
+			"D 2 ()",
+			"L 4 ()",
+			"U 1 ()",
+			"L 2 ()",
+			"U 2 ()",
+		},
+		28)
 }
 
 func TestToIndex(t *testing.T) {
@@ -174,27 +245,203 @@ func TestDeriveTurn(t *testing.T) {
 	}
 }
 
-func TestDeriveSide(t *testing.T) {
-	run := func(first, second shared.Loc, clockwise bool, expected shared.Loc) {
-		name := fmt.Sprintf("%v -> %v (%s)", first, second, gent.Tri(clockwise, "⤾", "⤿"))
+func TestParseLine(t *testing.T) {
+	run := func(line string, expected, expectedWithMagic instruction) {
+		for _, magic := range []bool{true, false} {
+			t.Run(
+				fmt.Sprintf("%s - %s", line, gent.Tri(magic, "magic", "no-magic")),
+				func(t *testing.T) {
+					shared.InitTestLogging(t)
+					req := require.New(t)
+
+					// EXERCISE
+					parsed := parseLine(line, magic)
+
+					// VERIFY
+					if magic {
+						req.Equal(expectedWithMagic, parsed)
+					} else {
+						req.Equal(expected, parsed)
+					}
+				},
+			)
+		}
+	}
+
+	run(
+		"R 2 (#70c710)",
+		instruction{
+			dir:       shared.RealEast,
+			stepCount: 2,
+			delta:     shared.Loc{X: 2, Y: 0},
+		},
+		instruction{
+			dir:       shared.RealEast,
+			stepCount: 461937,
+			delta:     shared.Loc{X: 461937},
+		})
+}
+
+func TestIsAbove(t *testing.T) {
+	var tests = []struct {
+		name     string
+		dir      shared.Direction
+		expected bool
+	}{
+		{"east", shared.RealEast, true},
+		{"west", shared.RealWest, false},
+	}
+	for _, tt := range tests {
+		for _, clockwise := range []bool{false, true} {
+			suffix := gent.Tri(clockwise, " clockwise", " counterclockwise")
+			if clockwise {
+				tt.expected = !tt.expected
+			}
+			t.Run(tt.name+suffix, func(t *testing.T) {
+				require.Equal(t, tt.expected, isAbove(tt.dir, clockwise))
+			})
+		}
+	}
+}
+
+func TestGatherRoutes(t *testing.T) {
+	run := func(
+		name string,
+		instructions []instruction,
+		clockwise bool,
+		expectedRoutes []route,
+		expectedXcoords []int) {
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
 
 			// EXERCISE
-			side := deriveSide(first, second, clockwise)
+			routes, xCoords := gatherRoutes(instructions, clockwise)
 
 			// VERIFY
-			req.Equal(expected, side)
+			req.Equal(stringify(expectedRoutes), stringify(routes), "routes")
+			req.Equal(expectedXcoords, xCoords, "x coordinates")
 		})
 	}
 
-	run(shared.Loc{}, shared.Loc{X: 1}, false, shared.Loc{Y: 1})
-	run(shared.Loc{}, shared.Loc{X: 1}, true, shared.Loc{Y: -1})
-	run(shared.Loc{}, shared.Loc{Y: 1}, false, shared.Loc{X: -1})
-	run(shared.Loc{}, shared.Loc{Y: 1}, true, shared.Loc{X: 1})
-	run(shared.Loc{}, shared.Loc{X: -1}, false, shared.Loc{Y: -1})
-	run(shared.Loc{}, shared.Loc{X: -1}, true, shared.Loc{Y: 1})
-	run(shared.Loc{}, shared.Loc{Y: -1}, false, shared.Loc{X: 1})
-	run(shared.Loc{}, shared.Loc{Y: -1}, true, shared.Loc{X: -1})
+	run(
+		"square",
+		[]instruction{
+			// 0,0 -> 0,-3
+			{dir: shared.RealSouth, stepCount: 3, delta: shared.Loc{Y: -3}},
+			// 0,-3 -> -3,-3
+			{dir: shared.RealWest, stepCount: 3, delta: shared.Loc{X: -3}},
+			// -3,-3 -> -3,0
+			{dir: shared.RealNorth, stepCount: 3, delta: shared.Loc{Y: 3}},
+			// -3,0 -> 0,0
+			{dir: shared.RealEast, stepCount: 3, delta: shared.Loc{X: 3}},
+		},
+		true,
+		[]route{
+			{y: -1, above: false},
+			{y: -2, above: true},
+			{from: -3, to: 0, y: -3, above: true},
+			{from: -3, to: -3, y: -1, above: false},
+			{from: -3, to: -3, y: -2, above: true},
+			{from: -3, to: 0, y: 0, above: false},
+		},
+		[]int{-3, 0})
+
+	run(
+		"rectangle",
+		[]instruction{
+			// 0,0 -> -3,0
+			{dir: shared.RealWest, stepCount: 3, delta: shared.Loc{X: -3}},
+			// -3,0 -> -3,-2
+			{dir: shared.RealSouth, stepCount: 2, delta: shared.Loc{Y: -2}},
+			// -3,-2 -> 1,-2
+			{dir: shared.RealEast, stepCount: 4, delta: shared.Loc{X: 4}},
+			// 1,-2 -> 1,0
+			{dir: shared.RealNorth, stepCount: 2, delta: shared.Loc{Y: 2}},
+			// 1,0 -> 0,0
+			{dir: shared.RealWest, stepCount: 1, delta: shared.Loc{X: -1}},
+		},
+		false,
+		[]route{
+			{from: -3, to: 0, y: 0, above: false},
+			{from: -3, to: -3, y: -1},
+			{from: -3, to: -3, y: -1, above: true},
+			{from: -3, to: 1, y: -2, above: true},
+			{from: 1, to: 1, y: -1},
+			{from: 1, to: 1, y: -1, above: true},
+			{from: 0, to: 1, y: 0, above: false},
+		},
+		[]int{-3, 0, 1})
+}
+
+func TestExpandAllRoutes(t *testing.T) {
+	shared.InitTestLogging(t)
+	req := require.New(t)
+
+	// 0 t---0-->--t
+	// 1 |         |
+	// 2 |         |
+	// 3 t---------t
+	//   43210123456
+	routes, xCoords := gatherRoutes(
+		[]instruction{
+			{
+				dir:       shared.RealEast,
+				stepCount: 6,
+				delta:     shared.Loc{X: 6},
+			},
+			{
+				dir:       shared.RealSouth,
+				stepCount: 3,
+				delta:     shared.Loc{Y: -3},
+			},
+			{
+				dir:       shared.RealWest,
+				stepCount: 10,
+				delta:     shared.Loc{X: -10},
+			},
+			{
+				dir:       shared.RealNorth,
+				stepCount: 3,
+				delta:     shared.Loc{Y: 3},
+			},
+			{
+				dir:       shared.RealEast,
+				stepCount: 4,
+				delta:     shared.Loc{X: 4},
+			},
+		},
+		true)
+	// EXERCISE
+	expanded := expandAllRoutes(routes, xCoords)
+
+	// VERIFY
+	a := []route{
+		{from: 0, to: 0},
+		{from: 1, to: 5},
+		{from: 6, to: 6},
+		{from: 6, to: 6, y: -1},
+		{from: 6, to: 6, y: -2, above: true},
+		{from: -4, to: -4, y: -3, above: true},
+		{from: -3, to: -1, y: -3, above: true},
+		{y: -3, above: true},
+		{from: 1, to: 5, y: -3, above: true},
+		{from: 6, to: 6, y: -3, above: true},
+		{from: -4, to: -4, y: -1},
+		{from: -4, to: -4, y: -2, above: true},
+		{from: -4, to: -4},
+		{from: -3, to: -1},
+		{from: 0, to: 0},
+	}
+	req.Equal(
+		stringify(a),
+		stringify(expanded))
+}
+
+func stringify[S ~[]T, T any](s S) []string {
+	strs := make([]string, len(s))
+	for i, each := range s {
+		strs[i] = fmt.Sprint(each)
+	}
+	return strs
 }

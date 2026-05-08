@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Volume: %d\n", aoc2318.Dig(lines))
+	fmt.Println("Volume:")
+	fmt.Printf("    Without magic:  %d\n", aoc2318.Dig(lines, false))
+	fmt.Printf("    With magic:     %d\n", aoc2318.Dig(lines, true))
 	shared.Logger.Info("Done.")
 }
