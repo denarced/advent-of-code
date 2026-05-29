@@ -18,6 +18,7 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Ratings sum: %d\n", aoc2319.SumRatings(lines))
+	fmt.Printf("Ratings sum:  %d\n", aoc2319.SumRatings(lines))
+	fmt.Printf("Combinations: %d\n", aoc2319.Negotiate(lines, nil))
 	shared.Logger.Info("Done.")
 }
