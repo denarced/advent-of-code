@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 
@@ -55,4 +56,55 @@ func TestDigitLength(t *testing.T) {
 	run(19, 2)
 	run(999, 3)
 	run(1000, 4)
+}
+
+func TestModForIndex(t *testing.T) {
+	run := func(dividend, divisor, expected int) {
+		name := fmt.Sprintf("%d/%d", dividend, divisor)
+		t.Run(name, func(t *testing.T) {
+			req := require.New(t)
+
+			// EXERCISE & VERIFY
+			req.Equal(expected, ModForIndex(dividend, divisor))
+		})
+	}
+
+	run(0, 0, 0)
+
+	run(-3, 2, 1)
+	run(-2, 2, 0)
+	run(-1, 2, 1)
+	run(0, 2, 0)
+	run(1, 2, 1)
+	run(2, 2, 0)
+	run(3, 2, 1)
+	run(4, 2, 0)
+}
+
+func TestDeriveGreeatestCommonDivisor(t *testing.T) {
+	for _, each := range [][3]int{
+		{1, 3, 5},
+		{2, 2, 4},
+		{5, 15, 20},
+		{21, 252, 105},
+	} {
+		t.Run(fmt.Sprintf("%d and %d", each[1], each[2]), func(t *testing.T) {
+			req := require.New(t)
+			req.Equal(each[0], DeriveGreatestCommonDivisor(each[1], each[2]), "euclidean")
+		})
+	}
+}
+
+func TestDeriveLeastCommonMultiple(t *testing.T) {
+	for _, each := range [][]int{
+		{2, 1, 2},
+		{12, 4, 6},
+		{15, 3, 5},
+		{60, 5, 2, 3, 4, 5},
+	} {
+		t.Run(fmt.Sprintf("%d and %d", each[1], each[2]), func(t *testing.T) {
+			req := require.New(t)
+			req.Equal(each[0], DeriveLeastCommonMultiple(each[1], each[2], each[3:]...))
+		})
+	}
 }

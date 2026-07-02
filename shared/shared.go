@@ -33,6 +33,7 @@ var (
 		RealNorthWest,
 		RealNorthEast,
 	}
+	RealDirections = append(RealPrimaryDirections, RealMiddleDirections...)
 
 	DirNorth   = Direction{X: 0, Y: -1}
 	DirEast    = Direction{X: 1, Y: 0}
@@ -284,6 +285,7 @@ func createGrid(lines []string) [][]rune {
 // ..012
 type BoardIterCb func(loc Loc, c rune) bool
 
+// Iter iterates the board and continues when cb return true.
 func (v *Board) Iter(cb BoardIterCb) {
 	for y := range len(v.grid) {
 		width := len(v.grid[y])
@@ -577,4 +579,31 @@ func AddLink[T any](parent *Link[T], item T) *Link[T] {
 		Item:   item,
 		Parent: parent,
 	}
+}
+
+// ModForIndex performs modulo for using result as slice / array index.
+func ModForIndex(index, length int) int {
+	if length == 0 {
+		return 0
+	}
+	return ((index % length) + length) % length
+}
+
+func DeriveGreatestCommonDivisor(a, b int) int {
+	less, more := min(a, b), max(a, b)
+	for {
+		more = more % less
+		if more == 0 {
+			return less
+		}
+		less, more = min(less, more), max(less, more)
+	}
+}
+
+func DeriveLeastCommonMultiple(a, b int, rest ...int) int {
+	common := (a * b) / DeriveGreatestCommonDivisor(a, b)
+	for _, each := range rest {
+		common = (common * each) / DeriveGreatestCommonDivisor(common, each)
+	}
+	return common
 }

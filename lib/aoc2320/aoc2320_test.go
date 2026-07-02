@@ -16,23 +16,46 @@ func TestCountSignalProductFromLines(t *testing.T) {
 			req := require.New(t)
 			lines, err := inr.ReadPath(filepath.Join("testdata", filen))
 			req.NoErrorf(err, "failed to read %s", filen)
-			// EXERCISE & VERIFY
-			req.Equal(expected, CountSignalProductFromLines(lines))
+
+			squad := NewFiringSquad(lines)
+			tracker := new(SignalTracker)
+			squad.SignalCb = tracker.Add
+
+			// EXERCISE
+			squad.Fire()
+
+			// VERIFY
+			req.Equal(expected, tracker.LowCount*tracker.HighCount)
 		})
 	}
 	run("in1.txt", 32_000_000)
 	run("in2.txt", 11_687_500)
 }
 
-func BenchmarkCountSignalProductFromLines(b *testing.B) {
+func BenchmarkFire(b *testing.B) {
 	shared.InitNullLogging()
 	req := require.New(b)
 	filen := "in2.txt"
 	lines, err := inr.ReadPath(filepath.Join("testdata", filen))
 	req.NoErrorf(err, "failed to read %s", filen)
 
+	squad := NewFiringSquad(lines)
 	b.ResetTimer()
 	for range b.N {
-		CountSignalProductFromLines(lines)
+		squad.Fire()
 	}
+}
+
+func TestFindTracked(t *testing.T) {
+	req := require.New(t)
+
+	// EXERCISE
+	components := map[string][]string{
+		"one": {"two"},
+		"two": {"three", "four"},
+	}
+	callers, soughtPulse := FindTracked(components, "one", Low)
+
+	req.Equal([]string{"three", "four"}, callers)
+	req.Equal(Low, soughtPulse)
 }
