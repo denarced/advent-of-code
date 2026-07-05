@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Range: %d\n", aoc2321.CountRangeFromLines(lines, 64))
+	fmt.Println("Range")
+	fmt.Printf("    Restricted: %d\n", aoc2321.CountRangeFromLines(lines, 64, false))
+	fmt.Printf("    Infinite:   %d\n", aoc2321.CountInfiniteRange(lines, 26501365))
 	shared.Logger.Info("Done.")
 }

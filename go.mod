@@ -1,6 +1,6 @@
 module github.com/denarced/advent-of-code
 
-go 1.22.2
+go 1.25.0
 
 require (
 	github.com/denarced/gent v0.3.0

@@ -315,6 +315,13 @@ func (v *Board) Get(loc Loc) (c rune, ok bool) {
 	return
 }
 
+func (v *Board) GetRelative(loc Loc) rune {
+	x := ModForIndex(loc.X, v.GetWidth())
+	y := ModForIndex(loc.Y, v.GetHeight())
+	line := v.grid[y]
+	return line[x]
+}
+
 func (v *Board) GetInt(loc Loc) (i int, ok bool) {
 	var c rune
 	c, ok = v.Get(loc)
