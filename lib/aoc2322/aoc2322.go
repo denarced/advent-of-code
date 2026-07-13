@@ -11,15 +11,33 @@ import (
 	"github.com/denarced/gent"
 )
 
+const (
+	houndRunning houndState = iota
+	houndWaiting
+	houndSleeping
+)
+
+type houndState int
+
+func (v houndState) String() string {
+	switch v {
+	case houndRunning:
+		return "running"
+	case houndWaiting:
+		return "waiting"
+	case houndSleeping:
+		return "sleeping"
+	default:
+		panic("unhandled enum case")
+	}
+}
+
 func CountBricksFromLines(lines []string) int {
 	bricks := parseLines(lines)
 	shared.Logger.Info(
 		"Lines parsed, count bricks that can be disintegrated.",
-		"brick count",
-		len(bricks),
-		"line count",
-		len(lines),
-	)
+		"brick count", len(bricks),
+		"line count", len(lines))
 	byLowZ, byHighZ := createSearchIndexes(bricks)
 	descend(bricks, byLowZ, byHighZ)
 	slackers := findSlackers(bricks, byLowZ, byHighZ)
@@ -108,50 +126,55 @@ func createSearchIndexes(bricks []brick) (byLow, byHigh map[int][]int) {
 	return
 }
 
+func createAboveToBelowMapping(
+	bricks []brick,
+	aboveBrickIndexes, belowBrickIndexes []int,
+	addSlackerFunc func(aBrick brick) bool,
+) map[int][]int {
+	aboveToBelow := map[int][]int{}
+	for _, belowBrickIndex := range belowBrickIndexes {
+		// This brick is the focus here: does it support nothing or is it one of many for bricks
+		// above that it supports.
+		lowBrick := bricks[belowBrickIndex]
+		if len(aboveBrickIndexes) == 0 {
+			if addSlackerFunc(lowBrick) {
+				shared.Logger.Info(
+					"New slacker found.",
+					"brick", lowBrick,
+					"index", belowBrickIndex)
+			}
+			continue
+		}
+		overlapIndexes := findOverlaps(bricks, aboveBrickIndexes, lowBrick)
+		// Nothing above.
+		if len(overlapIndexes) == 0 {
+			if addSlackerFunc(lowBrick) {
+				shared.Logger.Info(
+					"New slacker found. No bricks above.",
+					"brick", lowBrick,
+					"index", belowBrickIndex)
+			}
+			continue
+		}
+		for _, overlapIndex := range overlapIndexes {
+			aboveToBelow[overlapIndex] = append(aboveToBelow[overlapIndex], belowBrickIndex)
+		}
+	}
+	return aboveToBelow
+}
+
 func findSlackers(bricks []brick, byLow, byHigh map[int][]int) *gent.Set[brick] {
 	slackers := gent.NewSet[brick]()
 	for _, eachHighZ := range sortKeys(byHigh) {
-		belowBrickIndexes := byHigh[eachHighZ]
-		aboveBrickIndexes := byLow[eachHighZ+1]
-		bricksAbove := len(aboveBrickIndexes) > 0
-		if shared.IsDebugEnabled() {
-			if !bricksAbove {
-				shared.Logger.Debug(
-					"No bricks above, all slackers with high Z.",
-					"z", eachHighZ,
-					"count", len(belowBrickIndexes))
-			}
-		}
-		aboveToBelow := map[int][]int{}
+		aboveToBelow := createAboveToBelowMapping(
+			bricks,
+			byLow[eachHighZ+1],
+			byHigh[eachHighZ],
+			func(aBrick brick) bool {
+				return slackers.Add(aBrick)
+			},
+		)
 		singleParents := gent.NewSet[brick]()
-		for _, belowBrickIndex := range belowBrickIndexes {
-			// This brick is the focus here: does it support nothing or is it one of many for bricks
-			// above that it supports.
-			lowBrick := bricks[belowBrickIndex]
-			if !bricksAbove {
-				if slackers.Add(lowBrick) {
-					shared.Logger.Info(
-						"New slacker found.",
-						"brick", lowBrick,
-						"index", belowBrickIndex)
-				}
-				continue
-			}
-			overlapIndexes := findOverlaps(bricks, aboveBrickIndexes, lowBrick)
-			// Nothing above.
-			if len(overlapIndexes) == 0 {
-				if slackers.Add(lowBrick) {
-					shared.Logger.Info(
-						"New slacker found. No bricks above.",
-						"brick", lowBrick,
-						"index", belowBrickIndex)
-				}
-				continue
-			}
-			for _, overlapIndex := range overlapIndexes {
-				aboveToBelow[overlapIndex] = append(aboveToBelow[overlapIndex], belowBrickIndex)
-			}
-		}
 		for _, belowIndexes := range aboveToBelow {
 			if len(belowIndexes) > 1 {
 				for _, each := range belowIndexes {
@@ -213,8 +236,8 @@ func rangesOverlap(alphaFrom, alphaTo, omegaFrom, omegaTo int) bool {
 }
 
 func descend(bricks []brick, byLowZ, byHighZ map[int][]int) {
-	floor, zCoords := createFloor(bricks)
-	for _, z := range zCoords {
+	floor := createFloor(bricks)
+	for _, z := range extractSortedZ(bricks) {
 		brickIndexes := byLowZ[z]
 		for _, brickIndex := range brickIndexes {
 			candidate := bricks[brickIndex]
@@ -243,14 +266,7 @@ func descend(bricks []brick, byLowZ, byHighZ map[int][]int) {
 	}
 }
 
-func createFloor(bricks []brick) ([][]int, []int) {
-	zCoords := gent.NewSet[int]()
-	for _, each := range bricks {
-		zCoords.Add(each.start.z)
-	}
-	zSorted := zCoords.ToSlice()
-	slices.Sort(zSorted)
-
+func createFloor(bricks []brick) [][]int {
 	maximum := findMaximumXY(bricks)
 	maximum.X++
 	maximum.Y++
@@ -258,7 +274,17 @@ func createFloor(bricks []brick) ([][]int, []int) {
 	for i := range maximum.X {
 		floor[i] = make([]int, maximum.Y)
 	}
-	return floor, zSorted
+	return floor
+}
+
+func extractSortedZ(bricks []brick) []int {
+	zCoords := gent.NewSet[int]()
+	for _, each := range bricks {
+		zCoords.Add(each.start.z)
+	}
+	zSorted := zCoords.ToSlice()
+	slices.Sort(zSorted)
+	return zSorted
 }
 
 func findMaximumXY(bricks []brick) shared.Loc {
@@ -326,4 +352,149 @@ func moveBrickInMap(m map[int][]int, brickIndex, fromKey, toKey int) {
 	toIndexes = append(toIndexes, brickIndex)
 	slices.Sort(toIndexes)
 	m[toKey] = toIndexes
+}
+
+type greyhound struct {
+	brickIndex int
+	state      houndState
+	stepCount  int
+}
+
+func newGreyhound(brickIndex int, state houndState) *greyhound {
+	return &greyhound{
+		brickIndex: brickIndex,
+		state:      state,
+	}
+}
+
+func (v *greyhound) String() string {
+	return fmt.Sprintf(
+		"{brickIndex:%d state:%s stepCount:%d}",
+		v.brickIndex,
+		v.state.String(),
+		v.stepCount)
+}
+
+type runner struct {
+	bricks      []brick
+	ascendants  [][]int
+	descendents [][]int
+}
+
+func (v *runner) moveHounds(hounds *[]*greyhound) bool {
+	var houndMoved bool
+	for _, each := range *hounds {
+		if each.state == houndRunning {
+			ascendants := v.ascendants[each.brickIndex]
+			if len(ascendants) == 0 {
+				each.state = houndSleeping
+				continue
+			}
+			houndMoved = true
+			for i, aboveIndex := range ascendants {
+				if i > 0 {
+					hound := newGreyhound(each.brickIndex, houndRunning)
+					*hounds = append(*hounds, hound)
+					each = hound
+				}
+				each.brickIndex = aboveIndex
+				if len(v.descendents[aboveIndex]) == 1 {
+					each.stepCount++
+				} else {
+					each.state = houndWaiting
+				}
+			}
+		}
+	}
+	return houndMoved
+}
+
+func (v *runner) checkWaiting(hounds []*greyhound) bool {
+	var waitChanged bool
+	byBrickIndex := map[int][]int{}
+	for i, hound := range hounds {
+		if hound.state == houndWaiting {
+			byBrickIndex[hound.brickIndex] = append(byBrickIndex[hound.brickIndex], i)
+		}
+	}
+	for brickIndex, houndIndexes := range byBrickIndex {
+		if len(houndIndexes) < 2 {
+			continue
+		}
+		if len(houndIndexes) < len(v.descendents[brickIndex]) {
+			continue
+		}
+		waitChanged = true
+		topDog := hounds[houndIndexes[0]]
+		topDog.state = houndRunning
+		topDog.stepCount++
+		for j, houndIndex := range houndIndexes {
+			if j != 0 {
+				hounds[houndIndex].state = houndSleeping
+			}
+		}
+	}
+	return waitChanged
+}
+
+func (v *runner) run(brickIndex int) int {
+	hounds := []*greyhound{
+		newGreyhound(brickIndex, houndRunning),
+	}
+	for {
+		houndMoved := v.moveHounds(&hounds)
+		waitChanged := v.checkWaiting(hounds)
+		if !houndMoved && !waitChanged {
+			// The hounds that started to wait but never stopped are those that stepped on to a
+			// brick that's supported by bricks that are not reachable. Thus they are "discarded" at
+			// this time.
+			for _, hound := range hounds {
+				if hound.state == houndWaiting {
+					hound.state = houndSleeping
+				}
+			}
+			break
+		}
+	}
+
+	var total int
+	for _, each := range hounds {
+		if each.state != houndSleeping {
+			shared.Logger.Error("Found a hound that's not sleeping.", "hound", each.String())
+			panic("all hounds should be asleep")
+		}
+		total += each.stepCount
+	}
+	return total
+}
+
+func KillBricks(lines []string) int {
+	bricks := parseLines(lines)
+	ascendants := make([][]int, len(bricks))
+	descendents := make([][]int, len(bricks))
+	shared.Logger.Info(
+		"Lines parsed, count destruction.",
+		"brick count", len(bricks),
+		"line count", len(lines))
+	byLowZ, byHighZ := createSearchIndexes(bricks)
+	descend(bricks, byLowZ, byHighZ)
+	for i, each := range bricks {
+		descendents[i] = findOverlaps(bricks, byHighZ[each.start.z-1], each)
+		ascendants[i] = findOverlaps(bricks, byLowZ[each.end.z+1], each)
+	}
+	aRunner := &runner{
+		bricks:      bricks,
+		ascendants:  ascendants,
+		descendents: descendents,
+	}
+	var total int
+	for i := range bricks {
+		count := aRunner.run(i)
+		total += count
+		if shared.IsDebugEnabled() {
+			shared.Logger.Debug("Run finished.", "i", i, "count", count)
+		}
+	}
+	shared.Logger.Info("Fallen bricks counted.", "count", total)
+	return total
 }

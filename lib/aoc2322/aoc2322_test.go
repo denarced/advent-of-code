@@ -383,3 +383,52 @@ func TestIsOverlap(t *testing.T) {
 	run(parseBrick("2-3,5-6,1"), parseBrick("1-2,5-6,1"), true)
 	run(parseBrick("3-4,5-6,1"), parseBrick("1-2,5-6,1"), false)
 }
+
+func TestKillBricks(t *testing.T) {
+	run := func(name string, lines []string, expected int) {
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
+
+			// EXERCISE
+			killCount := KillBricks(lines)
+
+			// VERIFY
+			req.Equal(expected, killCount)
+		})
+	}
+
+	run(
+		"one brick",
+		[]string{
+			"0,0,1~0,0,1",
+		},
+		0)
+	run(
+		"one brick on another",
+		[]string{
+			"0,0,1~0,0,1",
+			"0,0,2~0,0,2",
+		},
+		1)
+	run(
+		"one brick on two",
+		[]string{
+			"0,0,1~0,0,1",
+			"1,0,1~1,0,1",
+			"0,0,2~1,0,2",
+		},
+		0)
+	run(
+		"diamond",
+		[]string{
+			"1,0,1~2,0,1",
+			"0,0,2~1,0,2",
+			"2,0,2~3,0,2",
+			"1,0,3~2,0,3",
+		},
+		3)
+
+	lines := gent.OrPanic2(inr.ReadPath("testdata/in.txt"))("read test data")
+	run("in.txt", lines, 7)
+}

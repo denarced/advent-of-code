@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/denarced/advent-of-code/lib/aoc2322"
 	"github.com/denarced/advent-of-code/shared"
@@ -18,14 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	os.Setenv("OMG", "777")
-	defer os.Unsetenv("OMG")
-
 	count := aoc2322.CountBricksFromLines(lines)
-	suffix := ""
-	if count == 895 || count == 578 {
-		suffix = " (wrong answer, too high)"
-	}
-	fmt.Printf("Brick count: %d%s\n", count, suffix)
+	fmt.Printf("Brick count:     %d\n", count)
+	fmt.Printf("Total fallout: %d\n", aoc2322.KillBricks(lines))
 	shared.Logger.Info("Done.")
 }
