@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Longest path: %d\n", aoc2323.FindLongestPath(lines))
+	fmt.Println("Longest path:")
+	fmt.Printf("    Downhill: %d\n", aoc2323.FindLongestPath(lines))
+	fmt.Printf("    +Uphill:  %d\n", aoc2323.FindLongestPathWithGraph(lines))
 	shared.Logger.Info("Done.")
 }

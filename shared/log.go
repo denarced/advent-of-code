@@ -2,6 +2,7 @@
 package shared
 
 import (
+	"bytes"
 	"io"
 	"log/slog"
 	"os"
@@ -67,7 +68,8 @@ type testWriter struct {
 }
 
 func (w testWriter) Write(p []byte) (n int, err error) {
-	w.tb.Log(string(p))
+	// Without trim there's an empty line between all lines when tests fail and logging is printed.
+	w.tb.Log(string(bytes.TrimSpace(p)))
 	return len(p), nil
 }
 
