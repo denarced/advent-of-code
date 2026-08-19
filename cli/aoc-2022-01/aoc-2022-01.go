@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Heaviest: %d\n", aoc2201.DeriveHeaviest(lines))
+	fmt.Println("Total load with limit:")
+	fmt.Printf("    1: %d\n", aoc2201.DeriveHeaviest(lines, 1))
+	fmt.Printf("    3: %d\n", aoc2201.DeriveHeaviest(lines, 3))
 	shared.Logger.Info("Done.")
 }
