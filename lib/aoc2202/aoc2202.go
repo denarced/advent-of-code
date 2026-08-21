@@ -7,14 +7,77 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-func DeriveTotalScore(lines []string) int {
+const (
+	Rock Piece = iota
+	Paper
+	Scissors
+)
+
+const (
+	Lose TargetResult = iota
+	Tie
+	Win
+)
+
+type Piece int
+type TargetResult int
+
+func (v Piece) String() string {
+	switch v {
+	case Rock:
+		return "rock"
+	case Paper:
+		return "paper"
+	case Scissors:
+		return "scissors"
+	default:
+		return "unknown Piece"
+	}
+}
+
+func (v Piece) Wins() Piece {
+	switch v {
+	case Rock:
+		return Scissors
+	case Paper:
+		return Rock
+	default:
+		return Paper
+	}
+}
+
+func (v Piece) LoseTo() Piece {
+	switch v {
+	case Rock:
+		return Paper
+	case Paper:
+		return Scissors
+	default:
+		return Rock
+	}
+}
+
+func (v TargetResult) String() string {
+	switch v {
+	case Lose:
+		return "lose"
+	case Tie:
+		return "tie"
+	case Win:
+		return "win"
+	default:
+		return "unknown TargetResult"
+	}
+}
+
+func DeriveTotalScore(lines []string, declareEnd bool) int {
 	var score int
 	for _, each := range lines {
 		trimmed := strings.TrimSpace(each)
 		if trimmed == "" {
 			continue
 		}
-		pieces := strings.Fields(trimmed)
+		pieces := toPieces(strings.Fields(trimmed))
 		if len(pieces) != 2 {
 			panic(
 				fmt.Sprintf(
@@ -22,8 +85,9 @@ func DeriveTotalScore(lines []string) int {
 					len(pieces),
 					trimmed))
 		}
-		pieceScore := derivePieceScore(pieces[1])
-		winScore := deriveWinScore(pieces[0], pieces[1])
+		myPiece := derivePiece(pieces, declareEnd)
+		winScore := deriveWinScore(pieces[0], myPiece)
+		pieceScore := myPiece.Score()
 		score += pieceScore + winScore
 		if shared.IsDebugEnabled() {
 			shared.Logger.Debug(
@@ -37,41 +101,67 @@ func DeriveTotalScore(lines []string) int {
 	return score
 }
 
-func derivePieceScore(piece string) int {
-	switch piece {
-	case "X":
-		return 1
-	case "Y":
-		return 2
-	case "Z":
-		return 3
+func derivePiece(pieces []Piece, declareEnd bool) Piece {
+	if !declareEnd {
+		return pieces[1]
+	}
+	targetResult := TargetResult(pieces[1])
+	switch targetResult {
+	case Lose:
+		return pieces[0].Wins()
+	case Tie:
+		return pieces[0]
+	case Win:
+		return pieces[0].LoseTo()
 	default:
-		panic("unknown piece: " + piece)
+		panic(fmt.Sprintf("unknown TargetResult: %d", targetResult))
 	}
 }
 
-func deriveWinScore(their, mine string) int {
-	first := int(their[0] - 'A')
-	second := int(mine[0] - 'X')
+func deriveWinScore(first, second Piece) int {
 	loss, even, win := 0, 3, 6
 	if first == second {
 		return even
 	}
-	// 0 rock, 1 paper, 2 scissors
-	if first == 0 {
-		if second == 1 {
-			return win
-		}
+	if first.LoseTo() == second {
+		return win
+	}
+	if first.Wins() == second {
 		return loss
 	}
-	if first == 1 {
-		if second == 0 {
-			return loss
-		}
-		return win
+	panic("impossible state")
+}
+
+func toPieces(s []string) []Piece {
+	pieces := make([]Piece, len(s))
+	for i, each := range s {
+		pieces[i] = toPiece(each)
 	}
-	if second == 0 {
-		return win
+	return pieces
+}
+
+func toPiece(s string) Piece {
+	switch s {
+	case "A", "X":
+		return Rock
+	case "B", "Y":
+		return Paper
+	case "C", "Z":
+		return Scissors
+	default:
+		panic("unknown piece: " + s)
 	}
-	return loss
+}
+
+func (v Piece) Score() int {
+	switch v {
+	case Rock:
+		return 1
+	case Paper:
+		return 2
+	case Scissors:
+		return 3
+	default:
+		panic(fmt.Sprintf("unknown piece: %d", v))
+	}
 }
