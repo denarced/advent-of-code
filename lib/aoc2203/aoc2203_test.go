@@ -9,11 +9,22 @@ import (
 )
 
 func TestSumPriorities(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
+	run := func(groupSearch bool, expected int) {
+		name := "compartments"
+		if groupSearch {
+			name = "group search"
+		}
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
 
-	lines, err := inr.ReadPath("testdata/in.txt")
-	req.NoError(err)
+			lines, err := inr.ReadPath("testdata/in.txt")
+			req.NoError(err)
 
-	req.Equal(157, SumPriorities(lines))
+			req.Equal(expected, SumPriorities(lines, groupSearch))
+		})
+	}
+
+	run(false, 157)
+	run(true, 70)
 }

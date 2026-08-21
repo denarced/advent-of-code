@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Priority sum: %d\n", aoc2203.SumPriorities(lines))
+	fmt.Println("Priority sum:")
+	fmt.Printf("    Rucksacks: %d\n", aoc2203.SumPriorities(lines, false))
+	fmt.Printf("    Groups:    %d\n", aoc2203.SumPriorities(lines, true))
 	shared.Logger.Info("Done.")
 }

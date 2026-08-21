@@ -5,11 +5,33 @@ import (
 	"github.com/denarced/gent"
 )
 
-func SumPriorities(lines []string) int {
+func SumPriorities(lines []string, groupSearch bool) int {
+	var table [][]string
+	if groupSearch {
+		var current []string
+		for _, each := range lines {
+			current = append(current, each)
+			if len(current) >= 3 {
+				table = append(table, current)
+				current = nil
+			}
+		}
+		if len(current) != 0 {
+			shared.Logger.Error(
+				"Current slice has content.",
+				"size", len(current),
+				"table size", len(table))
+			panic("current has content")
+		}
+	} else {
+		for _, line := range lines {
+			contents := splitLine(line)
+			table = append(table, contents)
+		}
+	}
 	var sum int
-	for _, line := range lines {
-		contents := splitLine(line)
-		commonItem := deriveCommon(contents)
+	for _, each := range table {
+		commonItem := deriveCommon(each)
 		var added int
 		if commonItem <= 'Z' {
 			added = int(commonItem-'A') + 27
