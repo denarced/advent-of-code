@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Assignment pairs: %d\n", aoc2204.CountAssignmentPairs(lines))
+	fmt.Println("Overlap count:")
+	fmt.Printf("    Complete: %d\n", aoc2204.CountOverlaps(lines, true))
+	fmt.Printf("    Partial:  %d\n", aoc2204.CountOverlaps(lines, false))
 	shared.Logger.Info("Done.")
 }

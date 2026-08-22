@@ -6,7 +6,7 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-func CountAssignmentPairs(lines []string) int {
+func CountOverlaps(lines []string, total bool) int {
 	var count int
 	for _, line := range lines {
 		var af, at, bf, bt int
@@ -19,7 +19,11 @@ func CountAssignmentPairs(lines []string) int {
 			shared.Logger.Error("Expected count of parsed numbers.", "count", parsedCount)
 			panic("count should be 4")
 		}
-		if isEnclosed(af, at, bf, bt) {
+		if total {
+			if isEnclosed(af, at, bf, bt) {
+				count++
+			}
+		} else if overlaps(af, at, bf, bt) {
 			count++
 		}
 	}
@@ -31,4 +35,11 @@ func isEnclosed(af, at, bf, bt int) bool {
 		return outFrom <= inFrom && inTo <= outTo
 	}
 	return is(af, at, bf, bt) || is(bf, bt, af, at)
+}
+
+func overlaps(af, at, bf, bt int) bool {
+	if af < bf {
+		return at >= bf
+	}
+	return bt >= af
 }
