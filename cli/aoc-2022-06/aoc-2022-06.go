@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Characters until package: %d\n", aoc2206.DeriveStartOfPackage(lines[0]))
+	fmt.Println("Characters until")
+	fmt.Printf("    Package: %d\n", aoc2206.DeriveStartOfPackage(lines[0], true))
+	fmt.Printf("    Message: %d\n", aoc2206.DeriveStartOfPackage(lines[0], false))
 	shared.Logger.Info("Done.")
 }

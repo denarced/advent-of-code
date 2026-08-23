@@ -16,18 +16,30 @@ func TestDeriveStartOfPackage(t *testing.T) {
 	lines, err := inr.ReadPath("testdata/in.txt")
 	require.NoError(t, err, "read test data")
 
-	run := func(i int, line string, expected int) {
-		name := fmt.Sprintf("%d-%s-%d", i, line[:4], expected)
+	run := func(i int, line string, expected int, seekPackage bool) {
+		name := fmt.Sprintf(
+			"%d-%s-%d-%s",
+			i,
+			line[:4],
+			expected,
+			gent.Tri(seekPackage, "package", "message"),
+		)
 		t.Run(name, func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
-			req.Equal(expected, DeriveStartOfPackage(line))
+			req.Equal(expected, DeriveStartOfPackage(line, seekPackage))
 		})
 	}
 
 	for i, each := range lines {
 		fields := strings.Fields(each)
 		expected := gent.OrPanic2(strconv.Atoi(fields[1]))("failed convert expected")
-		run(i, fields[0], expected)
+		run(i, fields[0], expected, true)
+
+		if len(fields) == 2 {
+			continue
+		}
+		expected = gent.OrPanic2(strconv.Atoi(fields[2]))("failed to convert expected")
+		run(i, fields[0], expected, false)
 	}
 }
