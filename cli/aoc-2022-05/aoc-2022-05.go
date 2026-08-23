@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty(), inr.NoTrim())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Top crates: %s\n", aoc2205.DeriveTopCrates(lines))
+	fmt.Println("Top crates:")
+	fmt.Printf("    One-by-one: %s\n", aoc2205.DeriveTopCrates(lines, true))
+	fmt.Printf("    At once:    %s\n", aoc2205.DeriveTopCrates(lines, false))
 	shared.Logger.Info("Done.")
 }

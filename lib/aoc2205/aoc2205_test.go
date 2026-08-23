@@ -9,11 +9,21 @@ import (
 )
 
 func TestDeriveTopCrates(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
+	run := func(oneByOne bool, expected string) {
+		name := "many-at-once"
+		if oneByOne {
+			name = "one-by-one"
+		}
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
 
-	lines, err := inr.ReadPath("testdata/in.txt", inr.IncludeEmpty(), inr.NoTrim())
-	req.NoError(err, "read test data")
+			lines, err := inr.ReadPath("testdata/in.txt", inr.IncludeEmpty(), inr.NoTrim())
+			req.NoError(err, "read test data")
 
-	req.Equal("CMZ", DeriveTopCrates(lines))
+			req.Equal(expected, DeriveTopCrates(lines, oneByOne))
+		})
+	}
+	run(true, "CMZ")
+	run(false, "MCD")
 }

@@ -7,15 +7,20 @@ import (
 	"github.com/denarced/advent-of-code/shared"
 )
 
-func DeriveTopCrates(lines []string) string {
+func DeriveTopCrates(lines []string, oneByOne bool) string {
 	stor, instructions := parseLines(lines)
 	shared.Logger.Info(
 		"Parsed.",
 		"store count", len(stor.stacks),
-		"instruction count", len(instructions))
+		"instruction count", len(instructions),
+		"one-by-one", oneByOne)
 	for _, instr := range instructions {
-		for range instr.count {
-			pop(stor, instr)
+		if oneByOne {
+			for range instr.count {
+				pop(stor, instr, 1)
+			}
+		} else {
+			pop(stor, instr, instr.count)
 		}
 	}
 	var cream []rune
@@ -110,11 +115,11 @@ func parseStorageLines(lines []string) storage {
 	return stor
 }
 
-func pop(stor storage, instr instruction) {
+func pop(stor storage, instr instruction, count int) {
 	from := stor.stacks[instr.from]
 	to := stor.stacks[instr.to]
-	to = append([]rune{from[0]}, to...)
-	from = from[1:]
+	to = append(append([]rune(nil), from[:count]...), to...)
+	from = from[count:]
 	stor.stacks[instr.from] = from
 	stor.stacks[instr.to] = to
 }
