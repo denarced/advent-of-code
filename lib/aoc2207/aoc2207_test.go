@@ -15,5 +15,7 @@ func TestDo(t *testing.T) {
 	lines, err := inr.ReadPath("testdata/in.txt")
 	req.NoError(err, "read test data")
 
-	req.Equal(95_437, SumRecursiveDirSize(lines))
+    total,toDelete := SumRecursiveDirSize(lines)
+	req.Equal(95_437, total, "total size")
+    req.Equal(24_933_642, toDelete, "size to delete")
 }

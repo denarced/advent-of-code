@@ -17,6 +17,9 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Total directory size: %d\n", aoc2207.SumRecursiveDirSize(lines))
+    fmt.Println("Size:")
+    total, toDelete := aoc2207.SumRecursiveDirSize(lines)
+	fmt.Printf("    Total:     %d\n", total)
+	fmt.Printf("    To delete: %d\n", toDelete)
 	shared.Logger.Info("Done.")
 }

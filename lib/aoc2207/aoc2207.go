@@ -13,20 +13,39 @@ const (
 	file
 )
 
-func SumRecursiveDirSize(lines []string) int {
+func SumRecursiveDirSize(lines []string) (sum, sizeToDelete int) {
 	shared.Logger.Info("Start calculating recursive dir size.", "line count", len(lines))
 	fsys := parseLines(lines)
+	requiredAvailableSpace := 30_000_000
+	extraSpaceNeeded := requiredAvailableSpace - fsys.available
+	shared.Logger.Info(
+		"Filesystem ready.",
+		"available space", fsys.available,
+		"space needed", extraSpaceNeeded)
 	dirs := fsys.findDirs(fsys.root)
 	shared.Logger.Info("Dirs gathered.", "count", len(dirs))
 	var totalSize int
+	minimumSize := 2_000_000_000
+	minimumName := ""
 	for _, each := range dirs {
 		size := fsys.countSize(each)
+		if size >= extraSpaceNeeded {
+			if size < minimumSize {
+				minimumSize = size
+				minimumName = each.name
+				shared.Logger.Info("Dir candidate to be deleted.", "name", each.name, "size", size)
+			}
+		}
 		if size <= 100_000 {
 			totalSize += size
 		}
 	}
-	shared.Logger.Info("Recursive dir size calculated.", "size", totalSize)
-	return totalSize
+	shared.Logger.Info(
+		"Recursive dir size calculated.",
+		"size", totalSize,
+		"dir to delete", minimumName,
+		"dir size to delete", minimumSize)
+	return totalSize, minimumSize
 }
 
 func parseLines(lines []string) *filesystem {
@@ -41,23 +60,27 @@ func newFilesystem() *filesystem {
 	return &filesystem{
 		cwd: []string{},
 		root: &node{
+			name: "/",
 			kind: directory,
 			kids: map[string]*node{},
 		},
+		available: 70_000_000,
 	}
 }
 
 type nodeType int
 
 type node struct {
+	name string
 	kind nodeType
 	size int
 	kids map[string]*node
 }
 
 type filesystem struct {
-	cwd  []string
-	root *node
+	cwd       []string
+	root      *node
+	available int
 }
 
 func (v *filesystem) execute(lineIndex *int, lines []string) {
@@ -109,6 +132,7 @@ func (v *filesystem) ls(lines []string) int {
 func (v *filesystem) addDir(dname string) {
 	nod := v.getCurrentNode()
 	nod.kids[dname] = &node{
+		name: dname,
 		kind: directory,
 		kids: map[string]*node{},
 	}
@@ -128,8 +152,11 @@ func (v *filesystem) addFile(line string) {
 		panic("should have 2 pieces on file line")
 	}
 	size := gent.OrPanic2(strconv.Atoi(pieces[0]))("failed to parse file size")
+	v.available -= size
 	nod := v.getCurrentNode()
-	nod.kids[pieces[1]] = &node{
+	name := pieces[1]
+	nod.kids[name] = &node{
+		name: name,
 		kind: file,
 		size: size,
 	}
