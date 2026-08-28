@@ -18,6 +18,7 @@ func TestDeriveVisibleTreeCount(t *testing.T) {
 			lines, err := inr.ReadPath(filepath.Join("testdata", filen))
 			req.NoError(err, "failed to read test data")
 
+			// EXERCISE & VERIFY
 			req.Equal(expected, DeriveVisibleTreeCount(lines))
 		})
 	}
@@ -28,4 +29,15 @@ func TestDeriveVisibleTreeCount(t *testing.T) {
 	run("in003.txt", 18)
 	run("in004.txt", 19)
 	run("in005.txt", 24)
+}
+
+func TestDeriveBestSpot(t *testing.T) {
+	shared.InitTestLogging(t)
+	req := require.New(t)
+
+	lines, err := inr.ReadPath("testdata/in.txt")
+	req.NoError(err, "failed to read test data")
+
+	// EXERCISE & VERIFY
+	req.Equal(8, DeriveBestSpot(lines))
 }

@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Visible tree count: %d\n", aoc2208.DeriveVisibleTreeCount(lines))
+	fmt.Println("Visible trees.")
+	fmt.Printf("    From the sides: %d\n", aoc2208.DeriveVisibleTreeCount(lines))
+	fmt.Printf("    From best spot: %d\n", aoc2208.DeriveBestSpot(lines))
 	shared.Logger.Info("Done.")
 }

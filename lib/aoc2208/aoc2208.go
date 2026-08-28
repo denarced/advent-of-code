@@ -105,3 +105,44 @@ func createSeen(brd *shared.Board, width, height int) [][]bool {
 	}
 	return seen
 }
+
+func DeriveBestSpot(lines []string) int {
+	brd := shared.NewBoard(lines)
+	var bestScore int
+	brd.Iter(func(loc shared.Loc, _ rune) bool {
+		score := deriveScenicScore(brd, loc)
+		bestScore = max(bestScore, score)
+		return true
+	})
+	return bestScore
+}
+
+func deriveScenicScore(brd *shared.Board, spot shared.Loc) int {
+	baseValue := brd.GetIntOrDie(spot)
+	var total int
+	for _, dir := range shared.RealPrimaryDirections {
+		currentSpot := spot.Delta(shared.Loc(dir))
+		var count int
+		for {
+			value, ok := brd.GetInt(currentSpot)
+			if !ok {
+				break
+			}
+			count++
+			if baseValue > value {
+				currentSpot = currentSpot.Delta(shared.Loc(dir))
+			} else {
+				break
+			}
+		}
+		if count == 0 {
+			return 0
+		}
+		if total == 0 {
+			total = count
+		} else {
+			total *= count
+		}
+	}
+	return total
+}
