@@ -13,16 +13,27 @@ const (
 	noop
 )
 
-func SumSignalStrengths(lines []string) int {
+func SumSignalStrengths(lines []string) (int, []string) {
 	registerX := 1
 	nextCheckpoint := 20
 	checkpointInterval := 40
 	frames := parseLines(lines)
+	crtWidth, crtHeight := 40, 6
+	crt := make([][]rune, crtHeight)
+	for i := range crt {
+		crt[i] = make([]rune, crtWidth)
+	}
 	var frameIndex int
 	var strentghSum int
 	nextActiveCycle := 1
 	stack := map[int]int{}
 	for cycle := 1; ; cycle++ {
+		crt[(cycle-1)/crtWidth][(cycle-1)%crtWidth] = deriveCrtPixel(
+			cycle,
+			crtWidth,
+			registerX,
+		)
+
 		if cycle == nextCheckpoint {
 			strength := cycle * registerX
 			strentghSum += strength
@@ -58,7 +69,15 @@ func SumSignalStrengths(lines []string) int {
 		panic("non-empty stack")
 	}
 	shared.Logger.Info("Signal strength sum counted.", "sum", strentghSum)
-	return strentghSum
+	return strentghSum, toLines(crt)
+}
+
+func toLines(content [][]rune) []string {
+	lines := make([]string, len(content))
+	for i, each := range content {
+		lines[i] = string(each)
+	}
+	return lines
 }
 
 type instruction int
@@ -122,4 +141,14 @@ func parseLines(lines []string) []frame {
 		frames = append(frames, frame{instr: instr, value: value})
 	}
 	return frames
+}
+
+func deriveCrtPixel(cycle, crtWidth, registerX int) rune {
+	crtPixelIndex := (cycle - 1) % crtWidth
+	lowCrt := registerX - 1
+	highCrt := registerX + 1
+	if lowCrt <= crtPixelIndex && crtPixelIndex <= highCrt {
+		return '#'
+	}
+	return '.'
 }

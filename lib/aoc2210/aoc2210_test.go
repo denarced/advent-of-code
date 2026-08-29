@@ -15,5 +15,9 @@ func TestDo(t *testing.T) {
 	lines, err := inr.ReadPath("testdata/in.txt")
 	req.NoError(err, "failed to read test data")
 
-	req.Equal(13_140, SumSignalStrengths(lines))
+	// EXERCISE
+	sum, _ := SumSignalStrengths(lines)
+
+	// VERIFY
+	req.Equal(13_140, sum)
 }

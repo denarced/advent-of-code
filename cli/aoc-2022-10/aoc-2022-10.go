@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/denarced/advent-of-code/lib/aoc2210"
 	"github.com/denarced/advent-of-code/shared"
@@ -17,6 +18,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of signal strengths: %d\n", aoc2210.SumSignalStrengths(lines))
+	sum, crtLines := aoc2210.SumSignalStrengths(lines)
+	fmt.Printf("Sum of signal strengths: %d\n", sum)
+	fmt.Println(strings.Join(crtLines, "\n"))
 	shared.Logger.Info("Done.")
 }
