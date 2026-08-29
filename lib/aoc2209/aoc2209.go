@@ -8,26 +8,31 @@ import (
 	"github.com/denarced/gent"
 )
 
-func CountVisitedPositions(lines []string) int {
+func CountVisitedPositions(lines []string, tailSize int) int {
 	steps := parseLines(lines)
-	var head, tail shared.Loc
-	tails := gent.NewSet(tail)
+	snake := make([]shared.Loc, tailSize+1)
+	tails := gent.NewSet(snake[len(snake)-1])
 	for _, each := range steps {
 		for range each.count {
-			prevHead := head
-			head = head.Delta(each.dir)
+			prevHead := snake[0]
+			snake[0] = snake[0].Delta(each.dir)
 			if shared.IsDebugEnabled() {
-				shared.Logger.Debug("Move head.", "from", prevHead, "to", head)
+				shared.Logger.Debug("Move head.", "from", prevHead, "to", snake[0])
 			}
-			tailDelta, ok := deriveTailDelta(head, tail)
-			if ok {
-				prevTail := tail
-				tail = tail.Delta(tailDelta)
-				tails.Add(tail)
-				if shared.IsDebugEnabled() {
-					shared.Logger.Debug("Move tail.", "from", prevTail, "to", tail)
+			for i := 0; i < len(snake)-1; i++ {
+				head := snake[i]
+				tail := snake[i+1]
+				tailDelta, ok := deriveTailDelta(head, tail)
+				if ok {
+					prevTail := tail
+					tail = tail.Delta(tailDelta)
+					snake[i+1] = tail
+					if shared.IsDebugEnabled() {
+						shared.Logger.Debug("Move tail.", "i", i, "from", prevTail, "to", tail)
+					}
 				}
 			}
+			tails.Add(snake[len(snake)-1])
 		}
 	}
 	return tails.Count()

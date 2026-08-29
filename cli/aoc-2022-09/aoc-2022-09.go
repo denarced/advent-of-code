@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Visited positions: %d\n", aoc2209.CountVisitedPositions(lines))
+	fmt.Println("Visited locations:")
+	fmt.Printf("    Short tail(1): %d\n", aoc2209.CountVisitedPositions(lines, 1))
+	fmt.Printf("    Long tail(9):  %d\n", aoc2209.CountVisitedPositions(lines, 9))
 	shared.Logger.Info("Done.")
 }

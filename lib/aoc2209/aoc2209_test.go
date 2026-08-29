@@ -15,5 +15,5 @@ func TestCountVisitedPositions(t *testing.T) {
 	lines, err := inr.ReadPath("testdata/in.txt")
 	req.NoError(err, "failed to read test data")
 
-	req.Equal(13, CountVisitedPositions(lines))
+	req.Equal(13, CountVisitedPositions(lines, 1))
 }
