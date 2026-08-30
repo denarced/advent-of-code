@@ -17,6 +17,14 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Level of monkey business: %d\n", aoc2211.DeriveMonkeyBusiness(lines))
+	fmt.Println("Level of monkey business:")
+	fmt.Printf(
+		"    20 rounds without worries: %d\n",
+		aoc2211.DeriveMonkeyBusiness(lines, 20, false),
+	)
+	fmt.Printf(
+		"    10k rounds with worries:   %d\n",
+		aoc2211.DeriveMonkeyBusiness(lines, 10_000, true),
+	)
 	shared.Logger.Info("Done.")
 }

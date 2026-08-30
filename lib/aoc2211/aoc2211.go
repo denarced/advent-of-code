@@ -2,6 +2,7 @@ package aoc2211
 
 import (
 	"fmt"
+	"math/big"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,35 +11,54 @@ import (
 	"github.com/denarced/gent"
 )
 
-func DeriveMonkeyBusiness(lines []string) int {
+func DeriveMonkeyBusiness(lines []string, roundCount int, worries bool) int {
 	monkeys := parseLines(lines)
-	for range 20 {
+
+	var commonDiv *big.Int
+	for _, each := range monkeys {
+		if commonDiv == nil {
+			commonDiv = new(big.Int).Set(each.testMod)
+		} else {
+			commonDiv.Mul(commonDiv, each.testMod)
+		}
+	}
+
+	bigZero := big.NewInt(0)
+	bigOne := big.NewInt(1)
+	bigThree := big.NewInt(3)
+	bigTen := big.NewInt(10)
+	bigMod := new(big.Int)
+	for round := 1; round <= roundCount; round++ {
 		for i, each := range monkeys {
 			for _, value := range each.startItems {
-				newValue := each.op(value)
-				rounded := newValue / 3
+				each.op(value)
+				if !worries {
+					value.Div(value, bigThree)
+				}
 
 				monkeyID := each.monkeyIDFalse
-				if rounded%each.testMod == 0 {
+				if bigMod.Mod(value, each.testMod).Cmp(bigZero) == 0 {
 					monkeyID = each.monkeyIDTrue
 				}
 				if each.ID == monkeyID {
 					panic("self send is not monkey-like")
 				}
-
-				if shared.IsDebugEnabled() {
-					shared.Logger.Debug(
-						"New value in the monkey's bag.",
-						"monkey", each.ID,
-						"value", value,
-						"after op", newValue,
-						"/3", rounded,
-						"send to", monkeyID)
-				}
-				monkeys[monkeyID].startItems = append(monkeys[monkeyID].startItems, rounded)
+				monkeys[monkeyID].startItems = append(monkeys[monkeyID].startItems, value)
 			}
 			monkeys[i].effortCount += len(each.startItems)
 			monkeys[i].startItems = monkeys[i].startItems[:0]
+		}
+		if !worries {
+			continue
+		}
+		for _, monk := range monkeys {
+			for _, startingValue := range monk.startItems {
+				if bigMod.Div(startingValue, commonDiv).Cmp(bigTen) > 0 {
+					bigMod.Sub(bigMod, bigOne)
+					bigMod.Mul(bigMod, commonDiv)
+					startingValue.Sub(startingValue, bigMod)
+				}
+			}
 		}
 	}
 	effortLevels := make([]int, len(monkeys))
@@ -86,13 +106,13 @@ func groupLines(lines []string) [][]string {
 	return lineSlices
 }
 
-type operation func(old int) int
+type operation func(old *big.Int)
 
 type monkey struct {
 	ID            int
-	startItems    []int
+	startItems    []*big.Int
 	op            operation
-	testMod       int
+	testMod       *big.Int
 	monkeyIDTrue  int
 	monkeyIDFalse int
 	effortCount   int
@@ -125,8 +145,8 @@ func parseMonkeyLines(lines []string) monkey {
 		case 1:
 			withoutSpaces := strings.ReplaceAll(each, " ", "")
 			monk.startItems = gent.Map(strings.Split(strings.Split(withoutSpaces, ":")[1], ","),
-				func(s string) int {
-					value, err := strconv.Atoi(s)
+				func(s string) *big.Int {
+					value, err := strconv.ParseInt(s, 10, 64)
 					if err != nil {
 						shared.Logger.Error(
 							"Failed to parse starting item integer.",
@@ -134,12 +154,14 @@ func parseMonkeyLines(lines []string) monkey {
 							"err", err)
 						panic(err)
 					}
-					return value
+					return big.NewInt(value)
 				})
 		case 2:
 			monk.op = parseOperation(each)
 		case 3:
-			assert(each)(fmt.Sscanf(each, "Test: divisible by %d", &monk.testMod))(1)
+			var testMod int64
+			assert(each)(fmt.Sscanf(each, "Test: divisible by %d", &testMod))(1)
+			monk.testMod = big.NewInt(testMod)
 		case 4:
 			assert(each)(fmt.Sscanf(each, "If true: throw to monkey %d", &monk.monkeyIDTrue))(1)
 		case 5:
@@ -165,26 +187,30 @@ func parseOperation(line string) operation {
 			"pieces", pieces)
 		panic("invalid operation formula")
 	}
-	return func(old int) int {
-		var other int
-		if pieces[2] == "old" {
+	var fixedValue *big.Int
+	if pieces[2] != "old" {
+		i, success := new(big.Int).SetString(pieces[2], 10)
+		if !success {
+			shared.Logger.Error(
+				"Failed parse fixed formula value.",
+				"pieces", pieces)
+			panic("failed to parse fixed formula value")
+		}
+		fixedValue = i
+	}
+
+	return func(old *big.Int) {
+		var other *big.Int
+		if fixedValue == nil {
 			other = old
 		} else {
-			i, err := strconv.Atoi(pieces[2])
-			if err != nil {
-				shared.Logger.Error(
-					"Failed parse fixed formula value.",
-					"err", err,
-					"pieces", pieces)
-				panic(err)
-			}
-			other = i
+			other = fixedValue
 		}
 		switch pieces[1] {
 		case "*":
-			return old * other
+			old.Mul(old, other)
 		case "+":
-			return old + other
+			old.Add(old, other)
 		default:
 			panic("unknown arithmetic operation: " + pieces[1])
 		}
