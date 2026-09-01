@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Fewest steps to primo signal: %d\n", aoc2212.DeriveFewestSteps(lines))
+	fmt.Println("Fewest steps:")
+	fmt.Printf("    Start to end: %d\n", aoc2212.DeriveFewestSteps(lines, aoc2212.StartToEnd))
+	fmt.Printf("    Low to end:   %d\n", aoc2212.DeriveFewestSteps(lines, aoc2212.LowToEnd))
 	shared.Logger.Info("Done.")
 }
