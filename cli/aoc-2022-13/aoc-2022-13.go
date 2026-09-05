@@ -18,6 +18,8 @@ func main() {
 	lines, err := inr.ReadPath(fmt.Sprintf("data/%s.txt", id), inr.IncludeEmpty())
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sum of sorted indices: %d\n", aoc2213.SumSortedIndexes(lines))
+	fmt.Println("Result:")
+	fmt.Printf("    Sum of sorted indices:        %d\n", aoc2213.SumSortedIndexes(lines))
+	fmt.Printf("    Product of divider positions: %d\n", aoc2213.SortAll(lines))
 	shared.Logger.Info("Done.")
 }

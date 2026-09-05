@@ -3,9 +3,11 @@ package aoc2213
 import (
 	"encoding/json"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/denarced/advent-of-code/shared"
+	"github.com/denarced/gent"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 
 func SumSortedIndexes(lines []string) int {
 	shared.Logger.Info("Derive sum of sorted indexes.", "line count", len(lines))
-	pairSets := toPairs(parseLines(lines))
+	pairSets := toPairs(parseLinesToPairs(lines))
 	var sum int
 	for i, pair := range pairSets {
 		inOrder := isInOrder(pair[0], pair[1])
@@ -45,7 +47,7 @@ func SumValues(values []any) int {
 	return sum
 }
 
-func parseLines(lines []string) [][]string {
+func parseLinesToPairs(lines []string) [][]string {
 	var linePairs [][]string
 	var current []string
 	for _, each := range lines {
@@ -169,4 +171,65 @@ func isInOrder(first, second []any) (sub orderType) {
 	}
 
 	return unknownOrder
+}
+
+func SortAll(lines []string) int {
+	shared.Logger.Info("Sort to find divider packets.", "line count", len(lines))
+	parsed := parseLines(lines)
+	dividerValues := []float64{2, 6}
+	shared.Logger.Info(
+		"Lines parsed, about to add dividers.",
+		"count", len(parsed),
+		"dividers", dividerValues)
+	for _, each := range dividerValues {
+		line := []any{[]any{each}}
+		parsed = append(parsed, line)
+	}
+	slices.SortFunc(parsed, func(a, b []any) int {
+		order := isInOrder(a, b)
+		switch order {
+		case correctOrder:
+			return -1
+		case incorrectOrder:
+			return 1
+		default:
+			return 0
+		}
+	})
+	var indexes []int
+	for i, each := range parsed {
+		if shared.IsDebugEnabled() {
+			s := gent.OrPanic2(json.Marshal(each))("failed to marshal to JSON")
+			shared.Logger.Debug("Sorted.", "i", i, "line", string(s))
+		}
+		if len(each) == 1 {
+			arr, ok := each[0].([]any)
+			if ok {
+				if len(arr) == 1 {
+					f, fOk := arr[0].(float64)
+					if fOk && (int(f) == 2 || int(f) == 6) {
+						indexes = append(indexes, i+1)
+					}
+				}
+			}
+		}
+	}
+	if len(indexes) != 2 {
+		shared.Logger.Error("Broken code, should have 2 indexes.", "len", len(indexes))
+	}
+	product := indexes[0] * indexes[1]
+	shared.Logger.Info("Sort result.", "product", product, "indexes", indexes)
+	return product
+}
+
+func parseLines(lines []string) [][]any {
+	var lists [][]any
+	for _, each := range lines {
+		trimmed := strings.TrimSpace(each)
+		if trimmed == "" {
+			continue
+		}
+		lists = append(lists, toAny(trimmed))
+	}
+	return lists
 }
