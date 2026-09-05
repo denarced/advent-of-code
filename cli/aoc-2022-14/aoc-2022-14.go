@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Sand grains: %d\n", aoc2214.MeasureSand(lines))
+	fmt.Println("Sand grains:")
+	fmt.Printf("    Until feeding abyss: %d\n", aoc2214.MeasureSand(lines, false))
+	fmt.Printf("    With infinite floor: %d\n", aoc2214.MeasureSand(lines, true))
 	shared.Logger.Info("Done.")
 }

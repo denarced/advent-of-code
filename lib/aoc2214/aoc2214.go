@@ -8,12 +8,16 @@ import (
 	"github.com/denarced/gent"
 )
 
-func MeasureSand(lines []string) int {
+func MeasureSand(lines []string, infiniteFloor bool) int {
 	sandPipe := shared.Loc{X: 500, Y: 0}
-	shared.Logger.Info("Let the sand flow.", "line count", len(lines), "sand pipe", sandPipe)
+	shared.Logger.Info(
+		"Let the sand flow.",
+		"line count", len(lines),
+		"sand pipe", sandPipe,
+		"infinite floor", infiniteFloor)
 	rocks := parseLines(lines)
 	lowestRockY := findLowestRockLevel(rocks)
-	isRock := createIsRock(rocks)
+	isRock := createIsRock(rocks, lowestRockY+2)
 	sand := gent.NewSet[shared.Loc]()
 primaryLoop:
 	for {
@@ -26,7 +30,7 @@ primaryLoop:
 			candidate.Y++
 			if !sand.Contains(candidate) && !isRock(candidate) {
 				grain = candidate
-				if grain.Y >= lowestRockY {
+				if !infiniteFloor && grain.Y >= lowestRockY {
 					break primaryLoop
 				}
 				continue
@@ -48,6 +52,7 @@ primaryLoop:
 			break
 		}
 	}
+	shared.Logger.Info("Finished counting sand.", "grains", sand.Count())
 	return sand.Count()
 }
 
@@ -85,8 +90,11 @@ func parseLine(line string, consume func(from, to shared.Loc)) {
 	}
 }
 
-func createIsRock(rocks [][2]shared.Loc) func(shared.Loc) bool {
+func createIsRock(rocks [][2]shared.Loc, infiniteFloorY int) func(shared.Loc) bool {
 	return func(candidate shared.Loc) bool {
+		if candidate.Y >= infiniteFloorY {
+			return true
+		}
 		for _, pair := range rocks {
 			if pair[0].X <= candidate.X && candidate.X <= pair[1].X {
 				if pair[0].Y <= candidate.Y && candidate.Y <= pair[1].Y {

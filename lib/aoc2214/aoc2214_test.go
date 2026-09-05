@@ -9,11 +9,23 @@ import (
 )
 
 func TestDo(t *testing.T) {
-	shared.InitTestLogging(t)
-	req := require.New(t)
+	run := func(infiniteFloor bool, expected int) {
+		name := "no floor"
+		if infiniteFloor {
+			name = "infinite floor"
+		}
+		t.Run(name, func(t *testing.T) {
+			shared.InitTestLogging(t)
+			req := require.New(t)
 
-	lines, err := inr.ReadPath("testdata/in.txt")
-	req.NoError(err, "failed to read test data")
+			lines, err := inr.ReadPath("testdata/in.txt")
+			req.NoError(err, "failed to read test data")
 
-	req.Equal(24, MeasureSand(lines))
+			req.Equal(expected, MeasureSand(lines, infiniteFloor))
+
+		})
+	}
+
+	run(false, 24)
+	run(true, 93)
 }
