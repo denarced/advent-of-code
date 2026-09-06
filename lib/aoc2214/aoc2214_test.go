@@ -5,16 +5,13 @@ import (
 
 	"github.com/denarced/advent-of-code/shared"
 	"github.com/denarced/advent-of-code/shared/inr"
+	"github.com/denarced/gent"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDo(t *testing.T) {
 	run := func(infiniteFloor bool, expected int) {
-		name := "no floor"
-		if infiniteFloor {
-			name = "infinite floor"
-		}
-		t.Run(name, func(t *testing.T) {
+		t.Run(gent.Tri(infiniteFloor, "infinite floor", "no floor"), func(t *testing.T) {
 			shared.InitTestLogging(t)
 			req := require.New(t)
 
@@ -22,7 +19,6 @@ func TestDo(t *testing.T) {
 			req.NoError(err, "failed to read test data")
 
 			req.Equal(expected, MeasureSand(lines, infiniteFloor))
-
 		})
 	}
 
