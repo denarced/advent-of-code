@@ -10,7 +10,8 @@ import (
 )
 
 func FindNoGoForBeacons(lines []string, y int) int {
-	xSet := gent.NewSet[int]()
+	shared.Logger.Info("Find no-go locations for beacon.", "y", y)
+	rSet := new(rangeSet)
 	reservedX := gent.NewSet[int]()
 	parseLines(lines, func(sens sensor) {
 		if sens.loc.Y == y {
@@ -28,18 +29,22 @@ func FindNoGoForBeacons(lines []string, y int) int {
 		}
 		alpha, omega := deriveRange(sens.loc.X, distance-centerToY)
 		logger.Debug("Add points.", "alpha", alpha, "omega", omega)
-		for i := alpha; i <= omega; i++ {
-			xSet.Add(i)
-		}
+		shared.Logger.Info(
+			"Add range.",
+			"alpha", alpha,
+			"omega", omega,
+			"omega-alpha", omega-alpha+1)
+		rSet.add([2]int{alpha, omega})
 	})
 	reservedX.ForEachAll(func(x int) {
-		xSet.Remove(x)
+		rSet.remove(x)
 	})
-	xCoords := xSet.ToSlice()
-	slices.Sort(xCoords)
-	result := xSet.Count()
-	shared.Logger.Info("No-go position count found.", "count", result, "x-coords", xCoords)
-	return xSet.Count()
+	var result int
+	for _, each := range rSet.ranges {
+		result += each[1] - each[0] + 1
+	}
+	shared.Logger.Info("No-go position count found.", "count", result)
+	return result
 }
 
 type sensor struct {
@@ -111,4 +116,78 @@ func calculateManhattanDistance(sens sensor) int {
 
 func deriveRange(centerX, overlap int) (from, to int) {
 	return centerX - overlap, centerX + overlap
+}
+
+type rangeSet struct {
+	ranges [][2]int
+}
+
+func (v *rangeSet) add(r [2]int) {
+	if v.ranges == nil {
+		v.ranges = [][2]int{r}
+		return
+	}
+	v.ranges = append(v.ranges, r)
+	slices.SortFunc(v.ranges, func(a, b [2]int) int {
+		return a[0] - b[0]
+	})
+	var i int
+	for {
+		if i >= len(v.ranges)-1 {
+			break
+		}
+		shared.Logger.Debug("Should join?", "i", v.ranges[i], "i+1", v.ranges[i+1])
+		if v.ranges[i][1]+1 >= v.ranges[i+1][0] {
+			shared.Logger.Debug("Join ranges.")
+			var next [][2]int
+			if i > 0 {
+				next = append([][2]int(nil), v.ranges[:i]...)
+			}
+			next = append(next, [2]int{v.ranges[i][0], max(v.ranges[i+1][1], v.ranges[i][1])})
+			if i+2 < len(v.ranges) {
+				next = append(next, v.ranges[i+2:]...)
+			}
+			v.ranges = next
+		} else {
+			i++
+		}
+	}
+}
+
+func (v *rangeSet) remove(value int) {
+	if len(v.ranges) == 0 {
+		return
+	}
+	if value < v.ranges[0][0] || v.ranges[len(v.ranges)-1][1] < value {
+		return
+	}
+	for i, each := range v.ranges {
+		if each[0] == value && each[1] == value {
+			if len(v.ranges) == 1 {
+				v.ranges = nil
+			} else {
+				var next [][2]int
+				next = append(next, v.ranges[:i]...)
+				next = append(next, v.ranges[i+1:]...)
+				v.ranges = next
+			}
+			return
+		}
+		if each[0] == value {
+			v.ranges[i][0] = value + 1
+			return
+		} else if each[1] == value {
+			v.ranges[i][1] = value - 1
+			return
+		} else if each[0] < value && value < each[1] {
+			shared.Logger.Debug("Charged bodyguard.")
+			var next [][2]int
+			next = append(next, v.ranges[:i]...)
+			next = append(next, [2]int{each[0], value - 1})
+			next = append(next, [2]int{value + 1, each[1]})
+			next = append(next, v.ranges[i+1:]...)
+			v.ranges = next
+			return
+		}
+	}
 }
