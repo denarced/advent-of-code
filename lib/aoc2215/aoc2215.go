@@ -191,3 +191,81 @@ func (v *rangeSet) remove(value int) {
 		}
 	}
 }
+
+func FindBeaconFrequency(lines []string, maxCoord int) int {
+	shared.Logger.Info("Find beacon.", "line count", len(lines), "max coordinate", maxCoord)
+	rangeSets := make([]*rangeSet, maxCoord+1)
+	parseLines(lines, func(sens sensor) {
+		deriveDiamond(sens, maxCoord, func(y, xFrom, xTo int) {
+			rSet := rangeSets[y]
+			if rSet == nil {
+				rSet = new(rangeSet)
+				rangeSets[y] = rSet
+			}
+			rSet.add([2]int{xFrom, xTo})
+		})
+	})
+	for y, rSet := range rangeSets {
+		if len(rSet.ranges) == 1 && rSet.ranges[0][0] == 0 && rSet.ranges[0][1] == maxCoord {
+			continue
+		}
+		x := pickMissingX(rSet, maxCoord)
+		frequency := x*4_000_000 + y
+		shared.Logger.Info("Beacon found.", "x", x, "y", y, "frequency", frequency)
+		return frequency
+	}
+	shared.Logger.Error("Failed to find frequency.")
+	return -1
+}
+
+func deriveDiamond(sens sensor, maxCoord int, cb func(y, xFrom, xTo int)) {
+	within := func(coord int) int {
+		if coord < 0 {
+			return 0
+		}
+		if coord > maxCoord {
+			return maxCoord
+		}
+		return coord
+	}
+	distance := calculateManhattanDistance(sens)
+	yFrom := sens.loc.Y - distance
+	yTo := sens.loc.Y + distance
+	if yTo < 0 || maxCoord < yFrom {
+		return
+	}
+	yFrom = within(yFrom)
+	yTo = within(yTo)
+	for d := -distance; d <= distance; d++ {
+		y := sens.loc.Y + d
+		if y < yFrom {
+			continue
+		}
+		if y > yTo {
+			break
+		}
+		horizontal := distance - shared.Abs(d)
+		xFrom := sens.loc.X - horizontal
+		xTo := sens.loc.X + horizontal
+		if xTo < 0 || maxCoord < xFrom {
+			continue
+		}
+		cb(y, within(xFrom), within(xTo))
+	}
+}
+
+func pickMissingX(rSet *rangeSet, maxCoord int) int {
+	if len(rSet.ranges) == 0 {
+		panic("empty rSet")
+	}
+	if len(rSet.ranges) == 1 {
+		if rSet.ranges[0][0] > 0 {
+			return 0
+		}
+		if rSet.ranges[0][1] < maxCoord {
+			return maxCoord
+		}
+		panic("impossible: goose must be geese")
+	}
+	return rSet.ranges[0][1] + 1
+}

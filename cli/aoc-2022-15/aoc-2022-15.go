@@ -18,5 +18,6 @@ func main() {
 	shared.Die(err, "ReadLinesFromFile")
 
 	fmt.Printf("Count of no-go for beacons: %d\n", aoc2215.FindNoGoForBeacons(lines, 2_000_000))
+	fmt.Printf("Beacon frequency:           %d\n", aoc2215.FindBeaconFrequency(lines, 4_000_000))
 	shared.Logger.Info("Done.")
 }
