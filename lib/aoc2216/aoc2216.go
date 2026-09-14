@@ -10,7 +10,7 @@ import (
 
 const firstChamberName = "AA"
 
-func DeriveMaximumPressure(lines []string) int {
+func DeriveMaximumPressure(lines []string, durationSeconds int, alone bool) int {
 	valves := parseLines(lines)
 	valveNameToValve := mapValves(valves)
 	nameToChamber := mapChambers(valves)
@@ -23,7 +23,7 @@ func DeriveMaximumPressure(lines []string) int {
 		},
 	}
 	shared.Logger.Info("Start travelling.")
-	for clockSeconds := range 30 {
+	for clockSeconds := range durationSeconds {
 		var addedTravelers []*traveler
 		for _, each := range travelers {
 			currValve := valveNameToValve[each.chamber.name]
@@ -31,7 +31,7 @@ func DeriveMaximumPressure(lines []string) int {
 				shared.Logger.Debug("New traveler to turn valve.", "name", currValve.name)
 				addedTravelers = append(
 					addedTravelers,
-					each.copyWithRate(currValve.flowRate, 29-clockSeconds),
+					each.copyWithRate(currValve.flowRate, durationSeconds-1-clockSeconds),
 				)
 			}
 			var firstTaken bool
@@ -74,21 +74,41 @@ func DeriveMaximumPressure(lines []string) int {
 		}
 	}
 	shared.Logger.Info("Travelling done.", "traveller count", len(travelers))
-	var maximus int
-	for i, each := range travelers {
-		if each.rate > 0 {
-			shared.Logger.Info(
-				"Traveller.",
-				"i", i,
-				"rate", each.rate,
-				"valve tail", renderTail(each.valveTail),
-				"full tail", renderTail(each.fullTail),
-				"turned valves", each.rateValves)
+	if alone {
+		var maximus int
+		for i, each := range travelers {
+			if each.rate > 0 {
+				shared.Logger.Info(
+					"Traveller.",
+					"i", i,
+					"rate", each.rate,
+					"valve tail", renderTail(each.valveTail),
+					"full tail", renderTail(each.fullTail),
+					"turned valves", each.rateValves)
+			}
+			maximus = max(maximus, each.rate)
 		}
-		maximus = max(maximus, each.rate)
+		shared.Logger.Info("Maximum pressure derived.", "maximum", maximus)
+		return maximus
 	}
-	shared.Logger.Info("Maximum pressure derived.", "maximum", maximus)
-	return maximus
+
+	var maxRateSum int
+	for i := 0; i < len(travelers)-1; i++ {
+		for j := i + 1; j < len(travelers); j++ {
+			if count, overlap := countUnique(travelers[i], travelers[j]); !overlap {
+				rateSum := travelers[i].rate + travelers[j].rate
+				maxRateSum = max(maxRateSum, rateSum)
+				shared.Logger.Info(
+					"No overlap.",
+					"first", i,
+					"second", j,
+					"count", count,
+					"total rate", rateSum)
+			}
+		}
+	}
+	shared.Logger.Info("Maximum pressure derived.", "max rate sum", maxRateSum)
+	return maxRateSum
 }
 
 func parseLines(lines []string) []*valve {
@@ -215,4 +235,27 @@ func isSteppingOnTail(tail *shared.Link[string], name string) bool {
 		}
 	}
 	return false
+}
+
+func countUnique(a, b *traveler) (count int, overlap bool) {
+	if len(a.rateValves) == 0 || len(b.rateValves) == 0 {
+		overlap = true
+		return
+	}
+	maxIndex := max(len(a.rateValves), len(b.rateValves))
+	nameToCount := map[string]int{}
+	for i := range maxIndex {
+		for _, each := range [][]string{a.rateValves, b.rateValves} {
+			if i < len(each) {
+				name := each[i]
+				if _, ok := nameToCount[name]; ok {
+					overlap = true
+					return
+				}
+				nameToCount[name] = 0
+			}
+		}
+	}
+	count = len(nameToCount)
+	return
 }

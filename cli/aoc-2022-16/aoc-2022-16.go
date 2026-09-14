@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Maximum pressure: %d\n", aoc2216.DeriveMaximumPressure(lines))
+	fmt.Println("Maximum achievable pressure:")
+	fmt.Printf("    Alone:         %d\n", aoc2216.DeriveMaximumPressure(lines, 30, true))
+	fmt.Printf("    With elephant: %d\n", aoc2216.DeriveMaximumPressure(lines, 26, false))
 	shared.Logger.Info("Done.")
 }

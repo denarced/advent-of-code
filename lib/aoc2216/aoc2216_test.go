@@ -15,7 +15,7 @@ func TestDeriveMaximumPressure(t *testing.T) {
 	lines, err := inr.ReadPath("testdata/in.txt")
 	req.NoError(err, "failed to read test data")
 
-	req.Equal(1651, DeriveMaximumPressure(lines))
+	req.Equal(1651, DeriveMaximumPressure(lines, 30, true))
 }
 
 func TestParseLine(t *testing.T) {
