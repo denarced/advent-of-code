@@ -17,6 +17,8 @@ func main() {
 	lines, err := shared.ReadLinesFromFile(fmt.Sprintf("data/%s.txt", id))
 	shared.Die(err, "ReadLinesFromFile")
 
-	fmt.Printf("Tower height: %d\n", aoc2217.MeasureTowerHeight(lines))
+	fmt.Println("Tower height:")
+	fmt.Printf("    2022:  %d\n", aoc2217.MeasureTowerHeight(lines, 2022))
+	fmt.Printf("    10^12: %d\n", aoc2217.MeasureTowerHeight(lines, 1000000000000))
 	shared.Logger.Info("Done.")
 }

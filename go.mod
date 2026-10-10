@@ -3,7 +3,7 @@ module github.com/denarced/advent-of-code
 go 1.25.0
 
 require (
-	github.com/denarced/gent v0.3.0
+	github.com/denarced/gent v0.9.0
 	github.com/stretchr/testify v1.10.0
 )
 
